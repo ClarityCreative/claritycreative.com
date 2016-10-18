@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.errors
  * @since     1.0
  */
@@ -33,7 +33,6 @@ class TemplateLoaderException extends \Twig_Error_Loader
 	{
 		$this->template = $template;
 		$message = Craft::t('Unable to find the template “{template}”.', array('template' => $this->template));
-		Craft::log($message, LogLevel::Error);
 
 		parent::__construct($message);
 	}

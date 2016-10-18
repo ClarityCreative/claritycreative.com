@@ -12,8 +12,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.cache
  * @since     2.0
  */
@@ -28,5 +28,20 @@ class DbCache extends \CDbCache
 	public function getDbConnection()
 	{
 		return craft()->db;
+	}
+
+	// Protected Methods
+	// =========================================================================
+
+	/**
+	 * @param DbConnection   $db
+	 * @param string         $tableName
+	 */
+	protected function createCacheTable($db, $tableName)
+	{
+		if (!craft()->db->tableExists(craft()->config->get('cacheTableName', ConfigFile::DbCache), true))
+		{
+			parent::createCacheTable($db, $tableName);
+		}
 	}
 }

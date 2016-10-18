@@ -1,15 +1,13 @@
 <?php
 namespace Craft;
 
-craft()->requireEdition(Craft::Client);
-
 /**
  * Class EntryRevisionsService
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.services
  * @since     1.0
  */
@@ -31,7 +29,19 @@ class EntryRevisionsService extends BaseApplicationComponent
 
 		if ($draftRecord)
 		{
-			return EntryDraftModel::populateModel($draftRecord);
+			$draft = EntryDraftModel::populateModel($draftRecord);
+
+			// This is a little hacky, but fixes a bug where entries are getting the wrong URL when a draft is published
+			// inside of a structured section since the selected URL Format depends on the entry's level, and there's no
+			// reason to store the level along with the other draft data.
+			$entry = craft()->entries->getEntryById($draftRecord->entryId, $draftRecord->locale);
+
+			$draft->root  = $entry->root;
+			$draft->lft   = $entry->lft;
+			$draft->rgt   = $entry->rgt;
+			$draft->level = $entry->level;
+
+			return $draft;
 		}
 	}
 
@@ -218,19 +228,65 @@ class EntryRevisionsService extends BaseApplicationComponent
 	 */
 	public function deleteDraft(EntryDraftModel $draft)
 	{
-		$draftRecord = $this->_getDraftRecord($draft);
+		$transaction = craft()->db->getCurrentTransaction() === null ? craft()->db->beginTransaction() : null;
 
-		// Fire an 'onBeforeDeleteDraft' event
-		$this->onBeforeDeleteDraft(new Event($this, array(
-			'draft'      => $draft,
-		)));
+		try
+		{
+			// Fire an 'onBeforeDeleteDraft' event
+			$event = new Event($this, array(
+				'draft' => $draft,
+			));
 
-		$draftRecord->delete();
+			$this->onBeforeDeleteDraft($event);
 
-		// Fire an 'onAfterDeleteDraft' event
-		$this->onAfterDeleteDraft(new Event($this, array(
-			'draft'      => $draft,
-		)));
+			// Is the event giving us the go-ahead?
+			if ($event->performAction)
+			{
+				$draftRecord = $this->_getDraftRecord($draft);
+				$draftRecord->delete();
+
+				$success = true;
+			}
+			else
+			{
+				$success = false;
+			}
+
+			// Commit the transaction regardless of whether we deleted the draft, in case something changed
+			// in onBeforeDeleteDraft
+			if ($transaction !== null)
+			{
+				$transaction->commit();
+			}
+		}
+		catch (\Exception $e)
+		{
+			if ($transaction !== null)
+			{
+				$transaction->rollback();
+			}
+
+			throw $e;
+		}
+
+		if ($success)
+		{
+			// Fire an 'onDeleteDraft' event
+			$this->onDeleteDraft(new Event($this, array(
+				'draft' => $draft,
+			)));
+
+			//
+			if ($this->hasEventHandler('onAfterDeleteDraft'))
+			{
+				// Fire an 'onAfterDeleteDraft' event (deprecated)
+				$this->onAfterDeleteDraft(new Event($this, array(
+					'draft' => $draft,
+				)));
+			}
+		}
+
+		return $success;
 	}
 
 	/**
@@ -277,13 +333,14 @@ class EntryRevisionsService extends BaseApplicationComponent
 	/**
 	 * Returns versions by an entry ID.
 	 *
-	 * @param int      $entryId
-	 * @param string   $localeId
-	 * @param int|null $limit
+	 * @param int      $entryId        The entry ID to search for.
+	 * @param string   $localeId       The locale ID to search for.
+	 * @param int|null $limit          The limit on the number of versions to retrieve.
+	 * @param bool     $includeCurrent Whether to include the current "top" version of the entry.
 	 *
 	 * @return array
 	 */
-	public function getVersionsByEntryId($entryId, $localeId, $limit = null)
+	public function getVersionsByEntryId($entryId, $localeId, $limit = null, $includeCurrent = false)
 	{
 		if (!$localeId)
 		{
@@ -292,14 +349,19 @@ class EntryRevisionsService extends BaseApplicationComponent
 
 		$versions = array();
 
-		$results = craft()->db->createCommand()
+		$query = craft()->db->createCommand()
 			->select('*')
 			->from('entryversions')
 			->where(array('and', 'entryId = :entryId', 'locale = :locale'), array(':entryId' => $entryId, ':locale' => $localeId))
 			->order('dateCreated desc')
-			->offset(1)
-			->limit($limit)
-			->queryAll();
+			->limit($limit);
+
+		if (!$includeCurrent)
+		{
+			$query->offset(1);
+		}
+
+		$results = $query->queryAll();
 
 		foreach ($results as $result)
 		{
@@ -414,15 +476,28 @@ class EntryRevisionsService extends BaseApplicationComponent
 	}
 
 	/**
-	 * Fires an 'onAfterDeleteDraft' event.
+	 * Fires an 'onDeleteDraft' event.
 	 *
 	 * @param Event $event
 	 *
 	 * @return null
 	 */
+	public function onDeleteDraft(Event $event)
+	{
+		$this->raiseEvent('onDeleteDraft', $event);
+	}
+
+	/**
+	 * Fires an 'onAfterDeleteDraft' event.
+	 *
+	 * @param Event $event
+	 *
+	 * @deprecated Deprecated in 2.3. Use {@link onDeleteDraft() `entryRevisions.onDeleteDraft`} instead.
+	 * @return null
+	 */
 	public function onAfterDeleteDraft(Event $event)
 	{
-		$this->raiseEvent('onAfterDeleteDraft', $event);
+		$this->raiseEvent('onDeleteDraft', $event);
 	}
 
 	/**
@@ -456,7 +531,7 @@ class EntryRevisionsService extends BaseApplicationComponent
 
 			if (!$draftRecord)
 			{
-				throw new Exception(Craft::t('No draft exists with the ID “{id}”', array('id' => $draft->draftId)));
+				throw new Exception(Craft::t('No draft exists with the ID “{id}”.', array('id' => $draft->draftId)));
 			}
 		}
 		else
@@ -488,6 +563,7 @@ class EntryRevisionsService extends BaseApplicationComponent
 			'postDate'   => ($revision->postDate   ? $revision->postDate->getTimestamp()   : null),
 			'expiryDate' => ($revision->expiryDate ? $revision->expiryDate->getTimestamp() : null),
 			'enabled'    => $revision->enabled,
+			'parentId'   => $revision->parentId,
 			'fields'     => array(),
 		);
 

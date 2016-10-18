@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -28,11 +28,16 @@ class EntryModel extends BaseElementModel
 	 */
 	protected $elementType = ElementType::Entry;
 
+	/**
+	 * @var UserModel
+	 */
+	private $_author;
+
 	// Public Methods
 	// =========================================================================
 
 	/**
-	 * Returns the field layout used by this element.
+	 * @inheritDoc BaseElementModel::getFieldLayout()
 	 *
 	 * @return FieldLayoutModel|null
 	 */
@@ -47,7 +52,7 @@ class EntryModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the locale IDs this element is available in.
+	 * @inheritDoc BaseElementModel::getLocales()
 	 *
 	 * @return array
 	 */
@@ -64,7 +69,7 @@ class EntryModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the URL format used to generate this element's URL.
+	 * @inheritDoc BaseElementModel::getUrlFormat()
 	 *
 	 * @return string|null
 	 */
@@ -135,7 +140,7 @@ class EntryModel extends BaseElementModel
 				else
 				{
 					// Just return the first one
-					return $sectionEntryTypes[array_shift(array_keys($sectionEntryTypes))];
+					return ArrayHelper::getFirstValue($sectionEntryTypes);
 				}
 			}
 		}
@@ -148,14 +153,26 @@ class EntryModel extends BaseElementModel
 	 */
 	public function getAuthor()
 	{
-		if ($this->authorId)
+		if (!isset($this->_author) && $this->authorId)
 		{
-			return craft()->users->getUserById($this->authorId);
+			$this->_author = craft()->users->getUserById($this->authorId);
 		}
+
+		return $this->_author;
 	}
 
 	/**
-	 * Returns the element's status.
+	 * Sets the entry's author.
+	 *
+	 * @param UserModel|null $author
+	 */
+	public function setAuthor(UserModel $author = null)
+	{
+		$this->_author = $author;
+	}
+
+	/**
+	 * @inheritDoc BaseElementModel::getStatus()
 	 *
 	 * @return string|null
 	 */
@@ -187,7 +204,7 @@ class EntryModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns whether the current user can edit the element.
+	 * @inheritDoc BaseElementModel::isEditable()
 	 *
 	 * @return bool
 	 */
@@ -203,7 +220,7 @@ class EntryModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the element's CP edit URL.
+	 * @inheritDoc BaseElementModel::getCpEditUrl()
 	 *
 	 * @return string|false
 	 */
@@ -213,7 +230,8 @@ class EntryModel extends BaseElementModel
 
 		if ($section)
 		{
-			$url = UrlHelper::getCpUrl('entries/'.$section->handle.'/'.$this->id);
+			// The slug *might* not be set if this is a Draft and they've deleted it for whatever reason
+			$url = UrlHelper::getCpUrl('entries/'.$section->handle.'/'.$this->id.($this->slug ? '-'.$this->slug : ''));
 
 			if (craft()->isLocalized() && $this->locale != craft()->language)
 			{
@@ -221,6 +239,22 @@ class EntryModel extends BaseElementModel
 			}
 
 			return $url;
+		}
+	}
+
+	/**
+	 * Sets some eager-loaded elements on a given handle.
+	 *
+	 * @param string             $handle   The handle to load the elements with in the future
+	 * @param BaseElementModel[] $elements The eager-loaded elements
+	 */
+	public function setEagerLoadedElements($handle, $elements)
+	{
+		if ($handle == 'author') {
+			$author = isset($elements[0]) ? $elements[0] : null;
+			$this->setAuthor($author);
+		} else {
+			parent::setEagerLoadedElements($handle, $elements);
 		}
 	}
 
@@ -240,6 +274,8 @@ class EntryModel extends BaseElementModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

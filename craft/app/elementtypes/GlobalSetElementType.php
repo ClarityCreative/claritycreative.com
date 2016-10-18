@@ -7,8 +7,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.elementtypes
  * @since     1.0
  */
@@ -18,7 +18,7 @@ class GlobalSetElementType extends BaseElementType
 	// =========================================================================
 
 	/**
-	 * Returns the element type name.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -28,7 +28,7 @@ class GlobalSetElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns whether this element type has content.
+	 * @inheritDoc IElementType::hasContent()
 	 *
 	 * @return bool
 	 */
@@ -38,7 +38,7 @@ class GlobalSetElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns whether this element type stores data on a per-locale basis.
+	 * @inheritDoc IElementType::isLocalized()
 	 *
 	 * @return bool
 	 */
@@ -48,7 +48,7 @@ class GlobalSetElementType extends BaseElementType
 	}
 
 	/**
-	 * Defines any custom element criteria attributes for this element type.
+	 * @inheritDoc IElementType::defineCriteriaAttributes()
 	 *
 	 * @return array
 	 */
@@ -61,10 +61,11 @@ class GlobalSetElementType extends BaseElementType
 	}
 
 	/**
-	 * Modifies an element query targeting elements of this type.
+	 * @inheritDoc IElementType::modifyElementsQuery()
 	 *
 	 * @param DbCommand $query
 	 * @param ElementCriteriaModel $criteria
+	 *
 	 * @return mixed
 	 */
 	public function modifyElementsQuery(DbCommand $query, ElementCriteriaModel $criteria)
@@ -80,9 +81,10 @@ class GlobalSetElementType extends BaseElementType
 	}
 
 	/**
-	 * Populates an element model based on a query result.
+	 * @inheritDoc IElementType::populateElementModel()
 	 *
 	 * @param array $row
+	 *
 	 * @return array
 	 */
 	public function populateElementModel($row)

@@ -8,11 +8,11 @@ craft()->requireEdition(Craft::Pro);
  *
  * @author     Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright  Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license    http://buildwithcraft.com/license Craft License Agreement
- * @see        http://buildwithcraft.com
+ * @license    http://craftcms.com/license Craft License Agreement
+ * @see        http://craftcms.com
  * @package    craft.app.assetsourcetypes
  * @since      1.0
- * @deprecated This class will most likely be removed in Craft 3.0.
+ * @deprecated This class will be removed in Craft 3.0.
  */
 class S3AssetSourceType extends BaseAssetSourceType
 {
@@ -49,25 +49,36 @@ class S3AssetSourceType extends BaseAssetSourceType
 	public static function getBucketList($keyId, $secret)
 	{
 		$s3 = new \S3($keyId, $secret);
-		$buckets = @$s3->listBuckets();
+		$s3->setExceptions(true);
 
-		if (empty($buckets))
+		try
 		{
-			throw new Exception(Craft::t("Credentials rejected by target host."));
+			$buckets = $s3->listBuckets();
+		}
+		catch (\Exception $exception)
+		{
+			// Re-throw a proper Craft Exception
+			throw new Exception($exception->getMessage());
 		}
 
 		$bucketList = array();
 
 		foreach ($buckets as $bucket)
 		{
-			$location = $s3->getBucketLocation($bucket);
+			try
+			{
+				$location = $s3->getBucketLocation($bucket);
+				$bucketList[] = array(
+					'bucket' => $bucket,
+					'location' => $location,
+					'urlPrefix' => 'http://'.static::getEndpointByLocation($location).'/'.$bucket.'/'
+				);
 
-			$bucketList[] = array(
-				'bucket' => $bucket,
-				'location' => $location,
-				'url_prefix' => 'http://'.static::getEndpointByLocation($location).'/'.$bucket.'/'
-			);
-
+			}
+			catch (\Exception $exception)
+			{
+				continue;
+			}
 		}
 
 		return $bucketList;
@@ -91,7 +102,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Returns the name of the source type.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -101,7 +112,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Returns the component's settings HTML.
+	 * @inheritDoc ISavableComponentType::getSettingsHtml()
 	 *
 	 * @return string|null
 	 */
@@ -118,7 +129,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Starts an indexing session.
+	 * @inheritDoc BaseAssetSourceType::startIndex()
 	 *
 	 * @param $sessionId
 	 *
@@ -220,7 +231,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Process an indexing session.
+	 * @inheritDoc BaseAssetSourceType::processIndex()
 	 *
 	 * @param $sessionId
 	 * @param $offset
@@ -258,11 +269,15 @@ class S3AssetSourceType extends BaseAssetSourceType
 			{
 				$this->_s3->getObject($settings->bucket, $this->_getPathPrefix().$indexEntryModel->uri, $targetPath);
 				clearstatcache();
-				list ($fileModel->width, $fileModel->height) = getimagesize($targetPath);
+
+				list ($width, $height) = ImageHelper::getImageSize($targetPath);
+
+				$fileModel->width = $width;
+				$fileModel->height = $height;
 
 				// Store the local source or delete - maxCacheCloudImageSize is king.
 				craft()->assetTransforms->storeLocalSource($targetPath, $targetPath);
-				craft()->assetTransforms->deleteSourceIfNecessary($targetPath);
+				craft()->assetTransforms->queueSourceForDeletingIfNecessary($targetPath);
 			}
 
 			$fileModel->dateModified = $timeModified;
@@ -276,42 +291,36 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Get the image source path with the optional handle name.
+	 * @inheritDoc BaseAssetSourceType::getImageSourcePath()
 	 *
-	 * @param AssetFileModel $fileModel
+	 * @param AssetFileModel $file
 	 *
 	 * @return mixed
 	 */
-	public function getImageSourcePath(AssetFileModel $fileModel)
+	public function getImageSourcePath(AssetFileModel $file)
 	{
-		return craft()->path->getAssetsImageSourcePath().$fileModel->id.'.'.IOHelper::getExtension($fileModel->filename);
+		return craft()->path->getAssetsImageSourcePath().$file->id.'.'.IOHelper::getExtension($file->filename);
 	}
 
 	/**
-	 * Get the timestamp of when a file transform was last modified.
+	 * @inheritDoc BaseAssetSourceType::putImageTransform()
 	 *
-	 * @param AssetFileModel $fileModel
-	 * @param string         $transformLocation
+	 * @param AssetFileModel           $file
+	 * @param AssetTransformIndexModel $index
+	 * @param string                   $sourceImage
 	 *
 	 * @return mixed
 	 */
-	public function getTimeTransformModified(AssetFileModel $fileModel, $transformLocation)
+	public function putImageTransform(AssetFileModel $file, AssetTransformIndexModel $index, $sourceImage)
 	{
-		$folder = $fileModel->getFolder();
-		$path = $this->_getPathPrefix().$folder->path.$transformLocation.'/'.$fileModel->filename;
 		$this->_prepareForRequests();
-		$info = $this->_s3->getObjectInfo($this->getSettings()->bucket, $path);
+		$targetFile = $this->_getPathPrefix().$file->folderPath.craft()->assetTransforms->getTransformSubpath($file, $index);
 
-		if (empty($info))
-		{
-			return false;
-		}
-
-		return new DateTime('@'.$info['time']);
+		return $this->putObject($sourceImage, $this->getSettings()->bucket, $targetFile, $this->_getACL());
 	}
 
 	/**
-	 * Return true if the source is a remote source.
+	 * @inheritDoc BaseAssetSourceType::isRemote()
 	 *
 	 * @return bool
 	 */
@@ -321,24 +330,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Copy a transform for a file from source location to target location.
-	 *
-	 * @param AssetFileModel $file
-	 * @param                $source
-	 * @param                $target
-	 *
-	 * @return mixed
-	 */
-	public function copyTransform(AssetFileModel $file, $source, $target)
-	{
-		$this->_prepareForRequests();
-		$basePath = $this->_getPathPrefix().$file->getFolder()->path;
-		$bucket = $this->getSettings()->bucket;
-		@$this->_s3->copyObject($bucket, $basePath.$source.'/'.$file->filename, $bucket, $basePath.$target.'/'.$file->filename, \S3::ACL_PUBLIC_READ);
-	}
-
-	/**
-	 * Return the source's base URL.
+	 * @inheritDoc BaseAssetSourceType::getBaseUrl()
 	 *
 	 * @return string
 	 */
@@ -358,11 +350,11 @@ class S3AssetSourceType extends BaseAssetSourceType
 	public function transformExists(AssetFileModel $file, $location)
 	{
 		$this->_prepareForRequests();
-		return (bool) @$this->_s3->getObjectInfo($this->getSettings()->bucket, $this->_getPathPrefix().$file->getFolder()->path.$location.'/'.$file->filename);
+		return (bool) @$this->_s3->getObjectInfo($this->getSettings()->bucket, $this->_getPathPrefix().$file->folderPath.$location.'/'.$file->filename);
 	}
 
 	/**
-	 * Make a local copy of the file and return the path to it.
+	 * @inheritDoc BaseAssetSourceType::getLocalCopy()
 	 *
 	 * @param AssetFileModel $file
 	 *
@@ -380,27 +372,38 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Put an image transform for the File and handle using the provided path to the source image.
+	 * @inheritDoc BaseAssetSourceType::fileExists()
 	 *
-	 * @param AssetFileModel $fileModel
-	 * @param                $handle
-	 * @param                $sourceImage
+	 * @param string $parentPath  Parent path
+	 * @param string $filename    The name of the file.
 	 *
-	 * @return mixed
+	 * @return boolean
 	 */
-	public function putImageTransform(AssetFileModel $fileModel, $handle, $sourceImage)
+	public function fileExists($parentPath, $fileName)
 	{
 		$this->_prepareForRequests();
-		$targetFile = $this->_getPathPrefix().$fileModel->getFolder()->path.'_'.ltrim($handle, '_').'/'.$fileModel->filename;
+		return (bool) $this->_s3->getObjectInfo($this->getSettings()->bucket, rtrim($this->_getPathPrefix().$parentPath, '/').'/'.$fileName);
+	}
 
-		return $this->putObject($sourceImage, $this->getSettings()->bucket, $targetFile, \S3::ACL_PUBLIC_READ);
+	/**
+	 * @inheritDoc BaseAssetSourceType::folderExists()
+	 *
+	 * @param string $parentPath  Parent path
+	 * @param string $folderName
+	 *
+	 * @return boolean
+	 */
+	public function folderExists($parentPath, $folderName)
+	{
+		$this->_prepareForRequests();
+		return (bool) $this->_s3->getObjectInfo($this->getSettings()->bucket, $this->_getPathPrefix().$parentPath.rtrim($folderName, '/').'/');
 	}
 
 	// Protected Methods
 	// =========================================================================
 
 	/**
-	 * Defines the settings.
+	 * @inheritDoc BaseSavableComponentType::defineSettings()
 	 *
 	 * @return array
 	 */
@@ -411,47 +414,47 @@ class S3AssetSourceType extends BaseAssetSourceType
 			'secret'     => array(AttributeType::String, 'required' => true),
 			'bucket'     => array(AttributeType::String, 'required' => true),
 			'location'   => array(AttributeType::String, 'required' => true),
-			'urlPrefix'  => array(AttributeType::String, 'required' => true),
+			'publicURLs' => array(AttributeType::Bool,   'default' => true),
+			'urlPrefix'  => array(AttributeType::String),
 			'subfolder'  => array(AttributeType::String, 'default' => ''),
 			'expires'    => array(AttributeType::String, 'default' => ''),
 		);
 	}
 
 	/**
-	 * Get a name replacement for a filename already taken in a folder.
+	 * @inheritDoc BaseAssetSourceType::getNameReplacementInFolder()
 	 *
 	 * @param AssetFolderModel $folder
 	 * @param string           $fileName
 	 *
 	 * @return mixed
 	 */
-	protected function getNameReplacement(AssetFolderModel $folder, $fileName)
+	protected function getNameReplacementInFolder(AssetFolderModel $folder, $fileName)
 	{
+		$baseFileName = IOHelper::getFileName($fileName, false);
+		$prefix = $this->_getPathPrefix().$folder->path;
+		
 		$this->_prepareForRequests();
-		$fileList = $this->_s3->getBucket($this->getSettings()->bucket, $this->_getPathPrefix().$folder->path);
+		$fileList = $this->_s3->getBucket($this->getSettings()->bucket, $prefix.$baseFileName);
 
-		// Double-check
-		if (!isset($fileList[$this->_getPathPrefix().$folder->path.$fileName]))
+		foreach ($fileList as &$file)
 		{
-			return $fileName;
+			$file = preg_replace('/^'.preg_quote($prefix, '/').'/', '', $file['name']);
 		}
 
-		$fileNameParts = explode(".", $fileName);
-		$extension = array_pop($fileNameParts);
+		// Drop all the paths that have subfolders.
+		$fileList = array_filter($fileList,
+			function ($file)
+			{
+				return !(strpos($file, '/') !== false || empty($file));
+			}
+		);
 
-		$fileNameStart = join(".", $fileNameParts).'_';
-		$index = 1;
-
-		while (isset($fileList[$this->_getPathPrefix().$folder->path.$fileNameStart.$index.'.'.$extension]))
-		{
-			$index++;
-		}
-
-		return $fileNameStart.$index.'.'.$extension;
+		return AssetsHelper::getFilenameReplacement($fileList, $fileName);
 	}
 
 	/**
-	 * Insert a file from path in folder.
+	 * @inheritDoc BaseAssetSourceType::insertFileInFolder()
 	 *
 	 * @param AssetFolderModel $folder
 	 * @param                  $filePath
@@ -462,10 +465,10 @@ class S3AssetSourceType extends BaseAssetSourceType
 	 */
 	protected function insertFileInFolder(AssetFolderModel $folder, $filePath, $fileName)
 	{
-		$fileName = IOHelper::cleanFilename($fileName);
+		$fileName = AssetsHelper::cleanAssetName($fileName);
 		$extension = IOHelper::getExtension($fileName);
 
-		if (! IOHelper::isExtensionAllowed($extension))
+		if (!IOHelper::isExtensionAllowed($extension))
 		{
 			throw new Exception(Craft::t('This file type is not allowed'));
 		}
@@ -485,7 +488,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 		clearstatcache();
 		$this->_prepareForRequests();
 
-		if (!$this->putObject($filePath, $this->getSettings()->bucket, $uriPath, \S3::ACL_PUBLIC_READ))
+		if (!$this->putObject($filePath, $this->getSettings()->bucket, $uriPath, $this->_getACL()))
 		{
 			throw new Exception(Craft::t('Could not copy file to target destination'));
 		}
@@ -495,48 +498,25 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Delete just the source file for an Assets File.
+	 * @inheritDoc BaseAssetSourceType::deleteSourceFile()
 	 *
-	 * @param AssetFolderModel $folder
-	 * @param                  $filename
-	 *
-	 * @return null
-	 */
-	protected function deleteSourceFile(AssetFolderModel $folder, $filename)
-	{
-		$this->_prepareForRequests();
-		@$this->_s3->deleteObject($this->getSettings()->bucket, $this->_getPathPrefix().$folder->path.$filename);
-	}
-
-	/**
-	 * Delete all the generated image transforms for this file.
-	 *
-	 * @param AssetFileModel $file
+	 * @param string $subpath
 	 *
 	 * @return null
 	 */
-	protected function deleteGeneratedImageTransforms(AssetFileModel $file)
+	protected function deleteSourceFile($subpath)
 	{
-		$folder = craft()->assets->getFolderById($file->folderId);
-		$transforms = craft()->assetTransforms->getGeneratedTransformLocationsForFile($file);
 		$this->_prepareForRequests();
-
-		$bucket = $this->getSettings()->bucket;
-
-		foreach ($transforms as $location)
-		{
-			@$this->_s3->deleteObject($bucket, $this->_getPathPrefix().$folder->path.$location.'/'.$file->filename);
-		}
+		@$this->_s3->deleteObject($this->getSettings()->bucket, $this->_getPathPrefix().$subpath);
 	}
 
 	/**
-	 * Move a file in source.
+	 * @inheritDoc BaseAssetSourceType::moveSourceFile()
 	 *
 	 * @param AssetFileModel   $file
 	 * @param AssetFolderModel $targetFolder
 	 * @param string           $fileName
-	 * @param bool             $overwrite If true, will overwrite the target
-	 *                                    destination.
+	 * @param bool             $overwrite
 	 *
 	 * @return mixed
 	 */
@@ -576,7 +556,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 
 		$this->_prepareForRequests($originatingSettings);
 
-		if (!$this->_s3->copyObject($sourceBucket, $this->_getPathPrefix($originatingSettings).$file->getFolder()->path.$file->filename, $bucket, $newServerPath, \S3::ACL_PUBLIC_READ))
+		if (!$this->_s3->copyObject($sourceBucket, $this->_getPathPrefix($originatingSettings).$file->getPath(), $bucket, $newServerPath, $this->_getACL()))
 		{
 			$response = new AssetOperationResponseModel();
 			return $response->setError(Craft::t("Could not save the file"));
@@ -586,24 +566,36 @@ class S3AssetSourceType extends BaseAssetSourceType
 
 		if ($file->kind == 'image')
 		{
-			$this->deleteGeneratedThumbnails($file);
-
-			// Move transforms
-			$transforms = craft()->assetTransforms->getGeneratedTransformLocationsForFile($file);
-
-			$baseFromPath = $this->_getPathPrefix().$file->getFolder()->path;
-			$baseToPath = $this->_getPathPrefix().$targetFolder->path;
-
-			foreach ($transforms as $location)
+			if ($targetFolder->sourceId == $file->sourceId)
 			{
-				// Suppress errors when trying to move image transforms. Maybe the user hasn't updated them yet.
-				$copyResult = @$this->_s3->copyObject($sourceBucket, $baseFromPath.$location.'/'.$file->filename, $bucket, $baseToPath.$location.'/'.$fileName, \S3::ACL_PUBLIC_READ);
+				$transforms = craft()->assetTransforms->getAllCreatedTransformsForFile($file);
 
-				// If we failed to copy, that's because source wasn't there. Skip delete and save time.
-				if ($copyResult)
+				$destination = clone $file;
+				$destination->filename = $fileName;
+
+				// Move transforms
+				foreach ($transforms as $index)
 				{
-					@$this->_s3->deleteObject($sourceBucket, $baseFromPath.$location.'/'.$file->filename);
+					// For each file, we have to have both the source and destination
+					// for both files and transforms, so we can reliably move them
+					$destinationIndex = clone $index;
+
+					if (!empty($index->filename))
+					{
+						$destinationIndex->filename = $fileName;
+						craft()->assetTransforms->storeTransformIndexData($destinationIndex);
+					}
+
+					$from = $this->_getPathPrefix($originatingSettings).$file->folderPath.craft()->assetTransforms->getTransformSubpath($file, $index);
+					$to   = $this->_getPathPrefix().$targetFolder->path.craft()->assetTransforms->getTransformSubpath($destination, $destinationIndex);
+
+					$this->copySourceFile($from, $to);
+					$this->deleteSourceFile($from);
 				}
+			}
+			else
+			{
+				craft()->assetTransforms->deleteAllTransformData($file);
 			}
 		}
 
@@ -614,36 +606,22 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Return true if a physical folder exists.
+	 * @inheritDoc BaseAssetSourceType::createSourceFolder()
 	 *
 	 * @param AssetFolderModel $parentFolder
-	 * @param                  $folderName
-	 *
-	 * @return bool
-	 */
-	protected function sourceFolderExists(AssetFolderModel $parentFolder, $folderName)
-	{
-		$this->_prepareForRequests();
-		return (bool) $this->_s3->getObjectInfo($this->getSettings()->bucket, $this->_getPathPrefix().$parentFolder->path.$folderName);
-
-	}
-
-	/**
-	 * Create a physical folder, return true on success.
-	 *
-	 * @param AssetFolderModel $parentFolder
-	 * @param                  $folderName
+	 * @param string           $folderName
 	 *
 	 * @return bool
 	 */
 	protected function createSourceFolder(AssetFolderModel $parentFolder, $folderName)
 	{
 		$this->_prepareForRequests();
-		return $this->putObject('', $this->getSettings()->bucket, $this->_getPathPrefix().rtrim($parentFolder->path.$folderName, '/').'/', \S3::ACL_PUBLIC_READ);
+
+		return $this->putObject('', $this->getSettings()->bucket, $this->_getPathPrefix().rtrim($parentFolder->path.$folderName, '/').'/', $this->_getACL());
 	}
 
 	/**
-	 * Rename a source folder.
+	 * @inheritDoc BaseAssetSourceType::renameSourceFolder()
 	 *
 	 * @param AssetFolderModel $folder
 	 * @param                  $newName
@@ -664,7 +642,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 		{
 			$filePath = mb_substr($file['name'], mb_strlen($this->_getPathPrefix().$folder->path));
 
-			$this->_s3->copyObject($bucket, $file['name'], $bucket, $newFullPath.$filePath, \S3::ACL_PUBLIC_READ);
+			$this->_s3->copyObject($bucket, $file['name'], $bucket, $newFullPath.$filePath, $this->_getACL());
 			@$this->_s3->deleteObject($bucket, $file['name']);
 		}
 
@@ -672,7 +650,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Delete the source folder.
+	 * @inheritDoc BaseAssetSourceType::deleteSourceFolder()
 	 *
 	 * @param AssetFolderModel $parentFolder
 	 * @param                  $folderName
@@ -694,7 +672,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 	}
 
 	/**
-	 * Determines if a file can be moved internally from original source.
+	 * @inheritDoc BaseAssetSourceType::canMoveFileFrom()
 	 *
 	 * @param BaseAssetSourceType $originalSource
 	 *
@@ -743,6 +721,26 @@ class S3AssetSourceType extends BaseAssetSourceType
 		return $this->_s3->putObject($object, $bucket, $uriPath, $permissions, array(), $headers);
 	}
 
+	/**
+	 * @inheritDoc BaseAssetSourceType::copySourceFile()
+	 *
+	 * @param $sourceUri
+	 * @param $targetUri
+	 *
+	 * @return bool
+	 */
+	protected function copySourceFile($sourceUri, $targetUri)
+	{
+		if ($sourceUri == $targetUri)
+		{
+			return true;
+		}
+
+		$bucket = $this->getSettings()->bucket;
+
+		return (bool) @$this->_s3->copyObject($bucket, $sourceUri, $bucket, $targetUri, $this->_getACL());
+	}
+
 	// Private Methods
 	// =========================================================================
 
@@ -763,6 +761,7 @@ class S3AssetSourceType extends BaseAssetSourceType
 		if (is_null($this->_s3))
 		{
 			$this->_s3 = new \S3($settings->keyId, $settings->secret);
+			$this->_s3->setExceptions(true);
 		}
 
 		\S3::setAuth($settings->keyId, $settings->secret);
@@ -801,7 +800,16 @@ class S3AssetSourceType extends BaseAssetSourceType
 	 */
 	private function _getS3Path(AssetFileModel $file, $settings = null)
 	{
-		$folder = $file->getFolder();
-		return $this->_getPathPrefix($settings).$folder->path.$file->filename;
+		return $this->_getPathPrefix($settings).$file->getPath();
+	}
+
+	/**
+	 * Return the ACL for this source.
+	 *
+	 * @return string
+	 */
+	private function _getACL()
+	{
+		return $this->getHasUrls() ? \S3::ACL_PUBLIC_READ : \S3::ACL_PRIVATE;
 	}
 }

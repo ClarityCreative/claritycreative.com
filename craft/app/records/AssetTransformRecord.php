@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.records
  * @since     1.0
  */
@@ -17,6 +17,8 @@ class AssetTransformRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::getTableName()
+	 *
 	 * @return string
 	 */
 	public function getTableName()
@@ -25,6 +27,8 @@ class AssetTransformRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineIndexes()
+	 *
 	 * @return array
 	 */
 	public function defineIndexes()
@@ -36,6 +40,8 @@ class AssetTransformRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::scopes()
+	 *
 	 * @return array
 	 */
 	public function scopes()
@@ -49,6 +55,8 @@ class AssetTransformRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
@@ -60,6 +68,7 @@ class AssetTransformRecord extends BaseRecord
 			'position'            => array(AttributeType::Enum, 'values' => array('top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'), 'required' => true, 'default' => 'center-center'),
 			'height'              => AttributeType::Number,
 			'width'               => AttributeType::Number,
+			'format'              => AttributeType::String,
 			'quality'             => array(AttributeType::Number, 'required' => false),
 			'dimensionChangeTime' => AttributeType::DateTime
 		);

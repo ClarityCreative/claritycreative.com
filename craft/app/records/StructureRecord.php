@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.records
  * @since     2.0
  */
@@ -17,6 +17,8 @@ class StructureRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::getTableName()
+	 *
 	 * @return string
 	 */
 	public function getTableName()
@@ -25,6 +27,8 @@ class StructureRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineRelations()
+	 *
 	 * @return array
 	 */
 	public function defineRelations()
@@ -38,13 +42,14 @@ class StructureRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
 	{
 		return array(
-			'maxLevels'      => array(AttributeType::Number, 'min' => 1, 'column' => ColumnType::SmallInt),
-			'movePermission' => AttributeType::String,
+			'maxLevels' => array(AttributeType::Number, 'min' => 1, 'column' => ColumnType::SmallInt),
 		);
 	}
 }

@@ -8,8 +8,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.enums
  * @since     1.0
  */
@@ -18,10 +18,11 @@ abstract class ComponentType extends BaseEnum
 	// Constants
 	// =========================================================================
 
-	const AssetSource = 'assetSource';
-	const Element     = 'element';
-	const Field       = 'field';
-	const Task        = 'task';
-	const Tool        = 'tool';
-	const Widget      = 'widget';
+	const AssetSource   = 'assetSource';
+	const Element       = 'element';
+	const ElementAction = 'elementAction';
+	const Field         = 'field';
+	const Task          = 'task';
+	const Tool          = 'tool';
+	const Widget        = 'widget';
 }

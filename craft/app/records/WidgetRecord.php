@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.records
  * @since     1.0
  */
@@ -17,6 +17,8 @@ class WidgetRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::getTableName()
+	 *
 	 * @return string
 	 */
 	public function getTableName()
@@ -25,6 +27,8 @@ class WidgetRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineRelations()
+	 *
 	 * @return array
 	 */
 	public function defineRelations()
@@ -38,6 +42,8 @@ class WidgetRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
@@ -45,6 +51,7 @@ class WidgetRecord extends BaseRecord
 		return array(
 			'type'      => array(AttributeType::ClassName, 'required' => true),
 			'sortOrder' => AttributeType::SortOrder,
+			'colspan' 	=> array(AttributeType::Number, 'column' => ColumnType::TinyInt, 'unsigned' => true),
 			'settings'  => AttributeType::Mixed,
 			'enabled'   => array(AttributeType::Bool, 'default' => true),
 		);

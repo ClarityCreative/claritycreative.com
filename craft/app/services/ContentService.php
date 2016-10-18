@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.services
  * @since     1.0
  */
@@ -248,6 +248,20 @@ class ContentService extends BaseApplicationComponent
 			'locale'    => $content->locale,
 		);
 
+		$excludeColumns = array_keys($values);
+		$excludeColumns = array_merge($excludeColumns, array_keys(DbHelper::getAuditColumnConfig()));
+
+		$fullContentTableName = craft()->db->addTablePrefix($this->contentTable);
+		$contentTableSchema = craft()->db->schema->getTable($fullContentTableName);
+
+		foreach ($contentTableSchema->columns as $columnSchema)
+		{
+			if ($columnSchema->allowNull && !in_array($columnSchema->name, $excludeColumns))
+			{
+				$values[$columnSchema->name] = null;
+			}
+		}
+
 		// If the element type has titles, than it's required and will be set. Otherwise, no need to include it (it
 		// might not even be a real column if this isn't the 'content' table).
 		if ($content->title)
@@ -318,9 +332,7 @@ class ContentService extends BaseApplicationComponent
 
 			if ($field && !$field->translatable)
 			{
-				$fieldType = $field->getFieldType();
-
-				if ($fieldType && $fieldType->defineContentAttribute())
+				if ($field->hasContentColumn())
 				{
 					$nonTranslatableFields[$field->id] = $field;
 				}
@@ -388,7 +400,7 @@ class ContentService extends BaseApplicationComponent
 					$handle = $field->handle;
 
 					// Set the keywords for the content's locale
-					$fieldSearchKeywords = $fieldType->getSearchKeywords($element->$handle);
+					$fieldSearchKeywords = $fieldType->getSearchKeywords($element->getFieldValue($handle));
 					$searchKeywordsByLocale[$content->locale][$field->id] = $fieldSearchKeywords;
 
 					// Should we queue up the other locales' new keywords too?

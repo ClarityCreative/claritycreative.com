@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.variables
  * @since     1.0
  */
@@ -37,6 +37,23 @@ class UserSessionVariable
 	}
 
 	/**
+	 * Returns the number of seconds the user will be logged in for.
+	 *
+	 * @return int
+	 */
+	public function getAuthTimeout()
+	{
+		if (craft()->isInstalled())
+		{
+			return craft()->userSession->getAuthTimeout();
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	/**
 	 * Returns the remembered username from cookie.
 	 *
 	 * @return string
@@ -49,13 +66,14 @@ class UserSessionVariable
 	/**
 	 * Returns the URL the user was trying to access before getting sent to the login page.
 	 *
-	 * @param string $defaultUrl
+	 * @param string $defaultUrl The default URL that should be returned if no return URL was stored.
+	 * @param bool   $delete     Whether the stored return URL should be deleted after it was fetched.
 	 *
-	 * @return mixed
+	 * @return string The return URL, or $defaultUrl.
 	 */
-	public function getReturnUrl($defaultUrl = '')
+	public function getReturnUrl($defaultUrl = null, $delete = false)
 	{
-		return craft()->userSession->getReturnUrl($defaultUrl);
+		return craft()->userSession->getReturnUrl($defaultUrl, $delete);
 	}
 
 	/**

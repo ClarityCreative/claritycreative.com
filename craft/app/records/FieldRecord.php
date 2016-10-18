@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.records
  * @since     1.0
  */
@@ -17,38 +17,42 @@ class FieldRecord extends BaseRecord
 	// =========================================================================
 
 	/**
-	 * @var array
+	 * @var array Reserved field handles.
+	 *
+	 * Some of these are element type-specific, but necessary to prevent 'order' criteria param conflicts
 	 */
 	protected $reservedHandleWords = array(
 		'archived',
-		'author',
-		'authorId',
+		'attributeLabel',
 		'children',
+		'contentTable',
 		'dateCreated',
 		'dateUpdated',
 		'enabled',
-		'expiryDate',
-		'firstName',
-		'handle',
 		'id',
-		'lastName',
+		'level',
+		'lft',
 		'link',
-		'img',
 		'locale',
-		'name',
+		'localeEnabled',
+		'name',             // global set-specific
+		'next',
 		'parents',
-		'postDate',
-		'section',
+		'postDate',         // entry-specific
+		'prev',
+		'ref',
+		'rgt',
+		'root',
+		'searchScore',
 		'siblings',
+		'slug',
 		'sortOrder',
-		'type',
+		'status',
+		'title',
 		'uid',
 		'uri',
 		'url',
-		'ref',
-		'size',
-		'status',
-		'title',
+		'username',         // user-specific
 	);
 
 	/**
@@ -93,6 +97,8 @@ class FieldRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::getTableName()
+	 *
 	 * @return string
 	 */
 	public function getTableName()
@@ -101,6 +107,8 @@ class FieldRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineRelations()
+	 *
 	 * @return array
 	 */
 	public function defineRelations()
@@ -111,6 +119,8 @@ class FieldRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineIndexes()
+	 *
 	 * @return array
 	 */
 	public function defineIndexes()
@@ -122,6 +132,8 @@ class FieldRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::scopes()
+	 *
 	 * @return array
 	 */
 	public function scopes()
@@ -151,6 +163,8 @@ class FieldRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

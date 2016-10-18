@@ -8,8 +8,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.services
  * @since     1.0
  */
@@ -61,12 +61,10 @@ class EmailService extends BaseApplicationComponent
 	 *                               bodies as they are being rendered with Twig, in addition to the `user` variable.
 	 *
 	 * @return bool Whether the email was successfully sent.
-	 *
-	 * @todo We need a UsersService::getUserByEmail() that this function can use instead of getUserByUsernameOrEmail().
 	 */
 	public function sendEmail(EmailModel $emailModel, $variables = array())
 	{
-		$user = craft()->users->getUserByUsernameOrEmail($emailModel->toEmail);
+		$user = craft()->users->getUserByEmail($emailModel->toEmail);
 
 		if (!$user)
 		{
@@ -85,7 +83,7 @@ class EmailService extends BaseApplicationComponent
 	 * Craft has four predefined email keys: account_activation, verify_new_email, forgot_password, and test_email.
 	 *
 	 * Plugins can register additional email keys using the
-	 * [registerEmailMessages](http://buildwithcraft.com/docs/plugins/hooks-reference#registerEmailMessages) hook, and
+	 * [registerEmailMessages](http://craftcms.com/docs/plugins/hooks-reference#registerEmailMessages) hook, and
 	 * by providing the corresponding language strings.
 	 *
 	 * ```php
@@ -118,7 +116,8 @@ class EmailService extends BaseApplicationComponent
 			$emailModel->body     = Craft::t($key.'_body', null, null, 'en_us');
 		}
 
-		$tempTemplatesPath = '';
+		$templatesService = craft()->templates;
+		$oldTemplateMode = $templatesService->getTemplateMode();
 
 		if (craft()->getEdition() >= Craft::Client)
 		{
@@ -127,14 +126,15 @@ class EmailService extends BaseApplicationComponent
 
 			if (!empty($settings['template']))
 			{
-				$tempTemplatesPath = craft()->path->getSiteTemplatesPath();
+				$templatesService->setTemplateMode(TemplateMode::Site);
 				$template = $settings['template'];
 			}
 		}
 
 		if (empty($template))
 		{
-			$tempTemplatesPath = craft()->path->getCpTemplatesPath();
+			// Default to the _special/email.html template
+			$templatesService->setTemplateMode(TemplateMode::CP);
 			$template = '_special/email';
 		}
 
@@ -149,15 +149,14 @@ class EmailService extends BaseApplicationComponent
 			$emailModel->htmlBody.
 			"{% endset %}\n";
 
-		// Temporarily swap the templates path
-		$originalTemplatesPath = craft()->path->getTemplatesPath();
-		craft()->path->setTemplatesPath($tempTemplatesPath);
+		// Tell the template which email key was being requested
+		$variables['emailKey'] = $key;
 
 		// Send the email
 		$return = $this->_sendEmail($user, $emailModel, $variables);
 
-		// Return to the original templates path
-		craft()->path->setTemplatesPath($originalTemplatesPath);
+		// Return to the original template mode
+		$templatesService->setTemplateMode($oldTemplateMode);
 
 		return $return;
 	}
@@ -210,12 +209,40 @@ class EmailService extends BaseApplicationComponent
 		return $success;
 	}
 
+	/**
+	 * Fires an 'onBeforeSendEmail' event.
+	 *
+	 * @param Event $event
+	 */
+	public function onBeforeSendEmail(Event $event)
+	{
+		$this->raiseEvent('onBeforeSendEmail', $event);
+	}
+
+	/**
+	 * Fires an 'onSendEmail' event.
+	 *
+	 * @param Event $event
+	 */
+	public function onSendEmail(Event $event)
+	{
+		$this->raiseEvent('onSendEmail', $event);
+	}
+
+	/**
+	 * Fires an 'onSendEmailError' event.
+	 *
+	 * @param Event $event
+	 */
+	public function onSendEmailError(Event $event)
+	{
+		$this->raiseEvent('onSendEmailError', $event);
+	}
+
 	// Private Methods
 	// =========================================================================
 
 	/**
-	 * Sends an email.
-	 *
 	 * @param UserModel  $user
 	 * @param EmailModel $emailModel
 	 * @param array      $variables
@@ -225,6 +252,8 @@ class EmailService extends BaseApplicationComponent
 	 */
 	private function _sendEmail(UserModel $user, EmailModel $emailModel, $variables = array())
 	{
+		$errorMessage = null;
+
 		// Get the saved email settings.
 		$emailSettings = $this->getSettings();
 
@@ -233,167 +262,232 @@ class EmailService extends BaseApplicationComponent
 			throw new Exception(Craft::t('Could not determine how to send the email.  Check your email settings.'));
 		}
 
-		$email = new \PHPMailer(true);
+		// Fire an 'onBeforeSendEmail' event
+		$event = new Event($this, array(
+			'user' => $user,
+			'emailModel' => $emailModel,
+			'variables'	 => $variables
+		));
 
-		// Default the charset to UTF-8
-		$email->CharSet = 'UTF-8';
+		$this->onBeforeSendEmail($event);
 
-		// Add a reply to (if any).  Make sure it’s set before setting From, because email is dumb.
-		if (!empty($emailModel->replyTo))
+		// Is the event giving us the go-ahead?
+		if ($event->performAction)
 		{
-			$email->addReplyTo($emailModel->replyTo);
-		}
-
-		// Set the "from" information.
-		$email->setFrom($emailModel->fromEmail, $emailModel->fromName);
-
-		// Check which protocol we need to use.
-		switch ($emailSettings['protocol'])
-		{
-			case EmailerType::Gmail:
-			case EmailerType::Smtp:
+			try
 			{
-				$this->_setSmtpSettings($email, $emailSettings);
-				break;
-			}
+				// In case a plugin changed any variables in onBeforeSendEmail
+				$variables = $event->params['variables'];
 
-			case EmailerType::Pop:
-			{
-				$pop = new \Pop3();
+				$email = new \PHPMailer(true);
 
-				if (!isset($emailSettings['host']) || !isset($emailSettings['port']) || !isset($emailSettings['username']) || !isset($emailSettings['password']) ||
-				    StringHelper::isNullOrEmpty($emailSettings['host']) || StringHelper::isNullOrEmpty($emailSettings['port']) || StringHelper::isNullOrEmpty($emailSettings['username']) || StringHelper::isNullOrEmpty($emailSettings['password']))
+				// Default the charset to UTF-8
+				$email->CharSet = 'UTF-8';
+
+				// Add a reply to (if any).  Make sure it’s set before setting From, because email is dumb.
+				if (!empty($emailModel->replyTo))
 				{
-					throw new Exception(Craft::t('Host, port, username and password must be configured under your email settings.'));
+					$email->addReplyTo($emailModel->replyTo);
 				}
 
-				if (!isset($emailSettings['timeout']))
+				// Set the "from" information.
+				$email->setFrom($emailModel->fromEmail, $emailModel->fromName);
+
+				// Check which protocol we need to use.
+				switch ($emailSettings['protocol'])
 				{
-					$emailSettings['timeout'] = $this->_defaultEmailTimeout;
+					case EmailerType::Gmail:
+					case EmailerType::Smtp:
+					{
+						$this->_setSmtpSettings($email, $emailSettings);
+						break;
+					}
+
+					case EmailerType::Pop:
+					{
+						$pop = new \POP3();
+
+						if (!isset($emailSettings['host']) || !isset($emailSettings['port']) || !isset($emailSettings['username']) || !isset($emailSettings['password']) ||
+							StringHelper::isNullOrEmpty($emailSettings['host']) || StringHelper::isNullOrEmpty($emailSettings['port']) || StringHelper::isNullOrEmpty($emailSettings['username']) || StringHelper::isNullOrEmpty($emailSettings['password'])
+						)
+						{
+							throw new Exception(Craft::t('Host, port, username and password must be configured under your email settings.'));
+						}
+
+						if (!isset($emailSettings['timeout']))
+						{
+							$emailSettings['timeout'] = $this->_defaultEmailTimeout;
+						}
+
+						$pop->authorize($emailSettings['host'], $emailSettings['port'], $emailSettings['timeout'], $emailSettings['username'], $emailSettings['password'], craft()->config->get('devMode') ? 1 : 0);
+
+						$this->_setSmtpSettings($email, $emailSettings);
+						break;
+					}
+
+					case EmailerType::Sendmail:
+					{
+						$email->isSendmail();
+						break;
+					}
+
+					case EmailerType::Php:
+					{
+						$email->isMail();
+						break;
+					}
+
+					default:
+					{
+						$email->isMail();
+					}
 				}
 
-				$pop->authorize($emailSettings['host'], $emailSettings['port'], $emailSettings['timeout'], $emailSettings['username'], $emailSettings['password'], craft()->config->get('devMode') ? 1 : 0);
-
-				$this->_setSmtpSettings($email, $emailSettings);
-				break;
-			}
-
-			case EmailerType::Sendmail:
-			{
-				$email->isSendmail();
-				break;
-			}
-
-			case EmailerType::Php:
-			{
-				$email->isMail();
-				break;
-			}
-
-			default:
-			{
-				$email->isMail();
-			}
-		}
-
-		// If they have the test email config var set to something, use it instead of the supplied email.
-		if (($testToEmail = craft()->config->get('testToEmailAddress')) != '')
-		{
-			$email->addAddress($testToEmail, 'Test Email');
-		}
-		else
-		{
-			$email->addAddress($user->email, $user->getFullName());
-		}
-
-		// Add any custom headers
-		if (!empty($emailModel->customHeaders))
-		{
-			foreach ($emailModel->customHeaders as $headerName => $headerValue)
-			{
-				$email->addCustomHeader($headerName, $headerValue);
-			}
-		}
-
-		// Add any BCC's
-		if (!empty($emailModel->bcc))
-		{
-			foreach ($emailModel->bcc as $bcc)
-			{
-				if (!empty($bcc['email']))
+				if (!$this->_processTestToEmail($email, 'Address'))
 				{
-					$bccEmail = $bcc['email'];
+					$email->addAddress($user->email, $user->getFullName());
+				}
 
-					$bccName = !empty($bcc['name']) ? $bcc['name'] : '';
-					$email->addBCC($bccEmail, $bccName);
+				// Add any custom headers
+				if (!empty($emailModel->customHeaders))
+				{
+					foreach ($emailModel->customHeaders as $headerName => $headerValue)
+					{
+						$email->addCustomHeader($headerName, $headerValue);
+					}
+				}
+
+				// Add any BCC's
+				if (!empty($emailModel->bcc))
+				{
+					if (!$this->_processTestToEmail($email, 'BCC'))
+					{
+						foreach ($emailModel->bcc as $bcc)
+						{
+							if (!empty($bcc['email']))
+							{
+								$bccEmail = $bcc['email'];
+
+								$bccName = !empty($bcc['name']) ? $bcc['name'] : '';
+								$email->addBCC($bccEmail, $bccName);
+							}
+						}
+					}
+				}
+
+				// Add any CC's
+				if (!empty($emailModel->cc))
+				{
+					if (!$this->_processTestToEmail($email, 'CC'))
+					{
+						foreach ($emailModel->cc as $cc)
+						{
+							if (!empty($cc['email']))
+							{
+								$ccEmail = $cc['email'];
+
+								$ccName = !empty($cc['name']) ? $cc['name'] : '';
+								$email->addCC($ccEmail, $ccName);
+							}
+						}
+					}
+				}
+
+				// Add a sender header (if any)
+				if (!empty($emailModel->sender))
+				{
+					$email->Sender = $emailModel->sender;
+				}
+
+				// Add any string attachments
+				if (!empty($emailModel->stringAttachments))
+				{
+					foreach ($emailModel->stringAttachments as $stringAttachment)
+					{
+						$email->addStringAttachment($stringAttachment['string'], $stringAttachment['fileName'], $stringAttachment['encoding'], $stringAttachment['type']);
+					}
+				}
+
+				// Add any normal disc attachments
+				if (!empty($emailModel->attachments))
+				{
+					foreach ($emailModel->attachments as $attachment)
+					{
+						$email->addAttachment($attachment['path'], $attachment['name'], $attachment['encoding'], $attachment['type']);
+					}
+				}
+
+				$variables['user'] = $user;
+
+				$oldLanguage = craft()->getLanguage();
+
+				// If they have a preferredLocale, use that.
+				if ($user->preferredLocale)
+				{
+					craft()->setLanguage($user->preferredLocale);
+				}
+
+				$email->Subject = craft()->templates->renderString($emailModel->subject, $variables);
+
+				// If they populated an htmlBody, use it.
+				if ($emailModel->htmlBody)
+				{
+					$renderedHtmlBody = craft()->templates->renderString($emailModel->htmlBody, $variables);
+					$email->msgHTML($renderedHtmlBody);
+				}
+				else
+				{
+					// They didn't provide an htmlBody, so markdown the body.
+					$renderedHtmlBody = craft()->templates->renderString(StringHelper::parseMarkdown($emailModel->body), $variables);
+					$email->msgHTML($renderedHtmlBody);
+				}
+
+				// Don't let Twig use the HTML escaping strategy on the plain text portion body of the email.
+				craft()->templates->getTwig()->getExtension('escaper')->setDefaultStrategy(false);
+				$email->AltBody = craft()->templates->renderString($emailModel->body, $variables);
+				craft()->templates->getTwig()->getExtension('escaper')->setDefaultStrategy('html');
+
+				craft()->setLanguage($oldLanguage);
+
+				// Explicitly hide the XMailer header.
+				$email->XMailer = ' ';
+
+				if (!$email->Send())
+				{
+					$errorMessage = $email->ErrorInfo;
 				}
 			}
-		}
-
-		// Add any CC's
-		if (!empty($emailModel->cc))
-		{
-			foreach ($emailModel->cc as $cc)
+			catch(\Exception $e)
 			{
-				if (!empty($cc['email']))
-				{
-					$ccEmail = $cc['email'];
-
-					$ccName = !empty($cc['name']) ? $cc['name'] : '';
-					$email->addCC($ccEmail, $ccName);
-				}
+				$errorMessage = $e->getMessage();
 			}
-		}
 
-		// Add a sender header (if any)
-		if (!empty($emailModel->sender))
-		{
-			$email->Sender = $emailModel->sender;
-		}
-
-		// Add any string attachments
-		if (!empty($emailModel->stringAttachments))
-		{
-			foreach ($emailModel->stringAttachments as $stringAttachment)
+			if ($errorMessage)
 			{
-				$email->addStringAttachment($stringAttachment['string'], $stringAttachment['fileName'], $stringAttachment['encoding'], $stringAttachment['type']);
+				// Fire an 'onSendEmailError' event
+				$this->onSendEmailError(new Event($this, array(
+					'user' => $user,
+					'emailModel' => $emailModel,
+					'variables' => $variables,
+					'error' => $errorMessage,
+				)));
+
+				throw new Exception(Craft::t('Email error: {error}', array('error' => $errorMessage)));
 			}
+
+			Craft::log('Successfully sent email with subject: '.$email->Subject, LogLevel::Info);
+
+			// Fire an 'onSendEmail' event
+			$this->onSendEmail(new Event($this, array(
+				'user' => $user,
+				'emailModel' => $emailModel,
+				'variables'	 => $variables
+			)));
+
+			return true;
 		}
 
-		// Add any normal disc attachments
-		if (!empty($emailModel->attachments))
-		{
-			foreach ($emailModel->attachments as $attachment)
-			{
-				$email->addAttachment($attachment['path'], $attachment['name'], $attachment['encoding'], $attachment['type']);
-			}
-		}
-
-		$variables['user'] = $user;
-
-		$email->Subject = craft()->templates->renderString($emailModel->subject, $variables);
-
-		// If they populated an htmlBody, use it.
-		if ($emailModel->htmlBody)
-		{
-			$renderedHtmlBody = craft()->templates->renderString($emailModel->htmlBody, $variables);
-			$email->msgHTML($renderedHtmlBody);
-			$email->AltBody = craft()->templates->renderString($emailModel->body, $variables);
-		}
-		else
-		{
-			// They didn't provide an htmlBody, so markdown the body.
-			$renderedHtmlBody = craft()->templates->renderString(StringHelper::parseMarkdown($emailModel->body), $variables);
-			$email->msgHTML($renderedHtmlBody);
-			$email->AltBody = craft()->templates->renderString($emailModel->body, $variables);
-		}
-
-		if (!$email->Send())
-		{
-			throw new Exception(Craft::t('Email error: {error}', array('error' => $email->ErrorInfo)));
-		}
-
-		return true;
+		return false;
 	}
 
 	/**
@@ -427,7 +521,15 @@ class EmailService extends BaseApplicationComponent
 			$email->SMTPKeepAlive = true;
 		}
 
-		$email->SMTPSecure = $emailSettings['smtpSecureTransportType'] != 'none' ? $emailSettings['smtpSecureTransportType'] : null;
+		if ($emailSettings['smtpSecureTransportType'] == 'none')
+		{
+			// Clearly they don't want any encryption.
+			$email->SMTPAutoTLS = false;
+		}
+		else
+		{
+			$email->SMTPSecure = $emailSettings['smtpSecureTransportType'];
+		}
 
 		if (!isset($emailSettings['host']))
 		{
@@ -447,5 +549,36 @@ class EmailService extends BaseApplicationComponent
 		$email->Host = $emailSettings['host'];
 		$email->Port = $emailSettings['port'];
 		$email->Timeout = $emailSettings['timeout'];
+	}
+
+	/**
+	 * @param $email
+	 * @param $method
+	 *
+	 * @return bool
+	 */
+	private function _processTestToEmail($email, $method)
+	{
+		$testToEmail = craft()->config->get('testToEmailAddress');
+		$method = 'add'.$method;
+
+		// If they have the test email config var set to a non-empty string use it instead of the supplied email.
+		if (is_string($testToEmail) && $testToEmail !== '')
+		{
+			$email->$method($testToEmail, 'Test Email');
+			return true;
+		}
+		// If they have the test email config var set to a non-empty array use the values instead of the supplied email.
+		else if (is_array($testToEmail) && count($testToEmail) > 0)
+		{
+			foreach ($testToEmail as $testEmail)
+			{
+				$email->$method($testEmail, 'Test Email');
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 }

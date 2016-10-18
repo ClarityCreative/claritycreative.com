@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -17,6 +17,8 @@ class UpdateModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::setAttribute()
+	 *
 	 * @param string $name
 	 * @param mixed  $value
 	 *
@@ -36,12 +38,14 @@ class UpdateModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
 	{
 		$attributes['app']      = array(AttributeType::Mixed, 'model' => 'AppUpdateModel');
-		$attributes['plugins']  = AttributeType::Mixed;
+		$attributes['plugins']  = array(AttributeType::Mixed, 'default' => array());
 		$attributes['errors']   = AttributeType::Mixed;
 
 		return $attributes;

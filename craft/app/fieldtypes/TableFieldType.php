@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.fieldtypes
  * @since     1.0
  */
@@ -17,7 +17,7 @@ class TableFieldType extends BaseFieldType
 	// =========================================================================
 
 	/**
-	 * Returns the type of field this is.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class TableFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the content attribute config.
+	 * @inheritDoc IFieldType::defineContentAttribute()
 	 *
 	 * @return mixed
 	 */
@@ -37,7 +37,7 @@ class TableFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the field's settings HTML.
+	 * @inheritDoc ISavableComponentType::getSettingsHtml()
 	 *
 	 * @return string|null
 	 */
@@ -54,7 +54,7 @@ class TableFieldType extends BaseFieldType
 			$this->getSettings()->columns = $columns;
 		}
 
-		if (!$defaults)
+		if ($defaults === null)
 		{
 			$defaults = array('row1' => array());
 		}
@@ -127,7 +127,7 @@ class TableFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the field's input HTML.
+	 * @inheritDoc IFieldType::getInputHtml()
 	 *
 	 * @param string $name
 	 * @param mixed  $value
@@ -149,7 +149,7 @@ class TableFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the input value as it should be saved to the database.
+	 * @inheritDoc IFieldType::prepValueFromPost()
 	 *
 	 * @param mixed $value
 	 *
@@ -165,7 +165,7 @@ class TableFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Preps the field value for use.
+	 * @inheritDoc IFieldType::prepValue()
 	 *
 	 * @param mixed $value
 	 *
@@ -192,7 +192,7 @@ class TableFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns static HTML for the field's value.
+	 * @inheritDoc IFieldType::getStaticHtml()
 	 *
 	 * @param mixed $value
 	 *
@@ -207,7 +207,7 @@ class TableFieldType extends BaseFieldType
 	// =========================================================================
 
 	/**
-	 * Defines the settings.
+	 * @inheritDoc BaseSavableComponentType::defineSettings()
 	 *
 	 * @return array
 	 */
@@ -217,6 +217,23 @@ class TableFieldType extends BaseFieldType
 			'columns' => AttributeType::Mixed,
 			'defaults' => AttributeType::Mixed,
 		);
+	}
+
+	/**
+	 * @inheritDoc ISavableComponentType::prepSettings()
+	 *
+	 * @param array $settings
+	 *
+	 * @return array
+	 */
+	public function prepSettings($settings)
+	{
+		if (!isset($settings['defaults']))
+		{
+			$settings['defaults'] = array();
+		}
+
+		return $settings;
 	}
 
 	// Private Methods

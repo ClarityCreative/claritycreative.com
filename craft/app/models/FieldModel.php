@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -32,6 +32,18 @@ class FieldModel extends BaseComponentModel
 	public function __toString()
 	{
 		return Craft::t($this->name);
+	}
+
+	/**
+	 * Returns whether this field has a column in the content table.
+	 *
+	 * @return bool
+	 */
+	public function hasContentColumn()
+	{
+		$fieldType = $this->getFieldType();
+
+		return ($fieldType && $fieldType->defineContentAttribute());
 	}
 
 	/**
@@ -62,7 +74,7 @@ class FieldModel extends BaseComponentModel
 	/**
 	 * Returns the field's group.
 	 *
-	 * @return EntryUserModel
+	 * @return UserGroupModel
 	 */
 	public function getGroup()
 	{
@@ -73,6 +85,8 @@ class FieldModel extends BaseComponentModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
@@ -87,6 +101,7 @@ class FieldModel extends BaseComponentModel
 			'translatable' => AttributeType::Bool,
 
 			'oldHandle'    => AttributeType::String,
+			'columnPrefix' => AttributeType::String,
 		));
 	}
 }

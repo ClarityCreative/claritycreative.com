@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.3
  */
@@ -86,7 +86,10 @@ class MatrixSettingsModel extends BaseModel
 	}
 
 	/**
-	 * Validates the block type settings.
+	 * Validates all of the attributes for the current Model. Any attributes that fail validation will additionally get
+	 * logged to the `craft/storage/runtime/logs` folder with a level of LogLevel::Warning.
+	 *
+	 * In addition, we validate the block type settings.
 	 *
 	 * @param array|null $attributes
 	 * @param bool       $clearErrors
@@ -110,7 +113,7 @@ class MatrixSettingsModel extends BaseModel
 	// =========================================================================
 
 	/**
-	 * Defines this model's attributes.
+	 * @inheritDoc BaseModel::defineAttributes()
 	 *
 	 * @return array
 	 */

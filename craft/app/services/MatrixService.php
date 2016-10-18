@@ -8,8 +8,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.services
  * @since     1.3
  */
@@ -136,11 +136,13 @@ class MatrixService extends BaseApplicationComponent
 	 *
 	 * If the block type doesn’t validate, any validation errors will be stored on the block type.
 	 *
-	 * @param MatrixBlockTypeModel $blockType The block type.
+	 * @param MatrixBlockTypeModel $blockType       The block type.
+	 * @param bool                 $validateUniques Whether the Name and Handle attributes should be validated to
+	 *                                              ensure they’re unique. Defaults to `true`.
 	 *
 	 * @return bool Whether the block type validated.
 	 */
-	public function validateBlockType(MatrixBlockTypeModel $blockType)
+	public function validateBlockType(MatrixBlockTypeModel $blockType, $validateUniques = true)
 	{
 		$validates = true;
 
@@ -150,11 +152,15 @@ class MatrixService extends BaseApplicationComponent
 		$blockTypeRecord->name    = $blockType->name;
 		$blockTypeRecord->handle  = $blockType->handle;
 
+		$blockTypeRecord->validateUniques = $validateUniques;
+
 		if (!$blockTypeRecord->validate())
 		{
 			$validates = false;
 			$blockType->addErrors($blockTypeRecord->getErrors());
 		}
+
+		$blockTypeRecord->validateUniques = true;
 
 		// Can't validate multiple new rows at once so we'll need to give these temporary context to avoid false unique
 		// handle validation errors, and just validate those manually. Also apply the future fieldColumnPrefix so that
@@ -168,6 +174,12 @@ class MatrixService extends BaseApplicationComponent
 
 		foreach ($blockType->getFields() as $field)
 		{
+			// Hack to allow blank field names
+			if (!$field->name)
+			{
+				$field->name = '__blank__';
+			}
+
 			craft()->fields->validateField($field);
 
 			// Make sure the block type handle + field handle combo is unique for the whole field. This prevents us from
@@ -194,7 +206,7 @@ class MatrixService extends BaseApplicationComponent
 				}
 			}
 
-			if ($field->hasErrors())
+			if ($field->hasErrors() || $field->hasSettingErrors())
 			{
 				$blockType->hasFieldErrors = true;
 				$validates = false;
@@ -287,6 +299,8 @@ class MatrixService extends BaseApplicationComponent
 				}
 
 				// Save the fields and field layout
+				// -------------------------------------------------------------
+
 				$fieldLayoutFields = array();
 				$sortOrder = 0;
 
@@ -296,27 +310,40 @@ class MatrixService extends BaseApplicationComponent
 
 				foreach ($blockType->getFields() as $field)
 				{
+					// Hack to allow blank field names
+					if (!$field->name)
+					{
+						$field->name = '__blank__';
+					}
+
 					if (!$fieldsService->saveField($field, false))
 					{
 						throw new Exception(Craft::t('An error occurred while saving this Matrix block type.'));
 					}
 
-					$sortOrder++;
-					$fieldLayoutFields[] = array(
-						'fieldId'   => $field->id,
-						'required'  => $field->required,
-						'sortOrder' => $sortOrder
-					);
+					$fieldLayoutField = new FieldLayoutFieldModel();
+					$fieldLayoutField->fieldId = $field->id;
+					$fieldLayoutField->required = $field->required;
+					$fieldLayoutField->sortOrder = ++$sortOrder;
+
+					$fieldLayoutFields[] = $fieldLayoutField;
 				}
 
 				$contentService->fieldContext        = $originalFieldContext;
 				$contentService->fieldColumnPrefix   = $originalFieldColumnPrefix;
 				$fieldsService->oldFieldColumnPrefix = $originalOldFieldColumnPrefix;
 
+				$fieldLayoutTab = new FieldLayoutTabModel();
+				$fieldLayoutTab->name = 'Content';
+				$fieldLayoutTab->sortOrder = 1;
+				$fieldLayoutTab->setFields($fieldLayoutFields);
+
 				$fieldLayout = new FieldLayoutModel();
 				$fieldLayout->type = ElementType::MatrixBlock;
+				$fieldLayout->setTabs(array($fieldLayoutTab));
 				$fieldLayout->setFields($fieldLayoutFields);
-				$fieldsService->saveLayout($fieldLayout, false);
+
+				$fieldsService->saveLayout($fieldLayout);
 
 				// Update the block type model & record with our new field layout ID
 				$blockType->setFieldLayout($fieldLayout);
@@ -377,16 +404,26 @@ class MatrixService extends BaseApplicationComponent
 
 			$this->deleteBlockById($blockIds);
 
-			// Now delete the block type fields
+			// Set the new contentTable
+			$originalContentTable = craft()->content->contentTable;
+			$matrixField = craft()->fields->getFieldById($blockType->fieldId);
+			$newContentTable = $this->getContentTableName($matrixField);
+			craft()->content->contentTable = $newContentTable;
+
+			// Set the new fieldColumnPrefix
 			$originalFieldColumnPrefix = craft()->content->fieldColumnPrefix;
 			craft()->content->fieldColumnPrefix = 'field_'.$blockType->handle.'_';
 
+
+			// Now delete the block type fields
 			foreach ($blockType->getFields() as $field)
 			{
 				craft()->fields->deleteField($field);
 			}
 
+			// Restore the contentTable and the fieldColumnPrefix to original values.
 			craft()->content->fieldColumnPrefix = $originalFieldColumnPrefix;
+			craft()->content->contentTable = $originalContentTable;
 
 			// Delete the field layout
 			craft()->fields->deleteLayoutById($blockType->fieldLayoutId);
@@ -427,13 +464,37 @@ class MatrixService extends BaseApplicationComponent
 
 		$this->_uniqueBlockTypeAndFieldHandles = array();
 
+		$uniqueAttributes = array('name', 'handle');
+		$uniqueAttributeValues = array();
+
 		foreach ($settings->getBlockTypes() as $blockType)
 		{
-			if (!$this->validateBlockType($blockType))
+			if (!$this->validateBlockType($blockType, false))
 			{
 				// Don't break out of the loop because we still want to get validation errors for the remaining block
 				// types.
 				$validates = false;
+			}
+
+			// Do our own unique name/handle validation, since the DB-based validation can't be trusted when saving
+			// multiple records at once
+			foreach ($uniqueAttributes as $attribute)
+			{
+				$value = $blockType->$attribute;
+
+				if ($value && (!isset($uniqueAttributeValues[$attribute]) || !in_array($value, $uniqueAttributeValues[$attribute])))
+				{
+					$uniqueAttributeValues[$attribute][] = $value;
+				}
+				else
+				{
+					$blockType->addError($attribute, Craft::t('{attribute} "{value}" has already been taken.', array(
+						'attribute' => $blockType->getAttributeLabel($attribute),
+						'value'     => HtmlHelper::encode($value)
+					)));
+
+					$validates = false;
+				}
 			}
 		}
 
@@ -673,7 +734,23 @@ class MatrixService extends BaseApplicationComponent
 	}
 
 	/**
-	 * Saves a block.
+	 * Saves a new or existing Matrix block.
+	 *
+	 * ```php
+	 * $block = new MatrixBlockModel();
+	 * $block->fieldId = 5;
+	 * $block->ownerId = 100;
+	 * $block->ownerLocale = 'en_us';
+	 * $block->typeId = 2;
+	 * $block->sortOrder = 10;
+	 *
+	 * $block->setContentFromPost(array(
+	 *     'fieldHandle' => 'value',
+	 *     // ...
+	 * ));
+	 *
+	 * $success = craft()->matrix->saveBlock($block);
+	 * ```
 	 *
 	 * @param MatrixBlockModel $block    The Matrix block.
 	 * @param bool             $validate Whether the block should be validated before being saved.
@@ -748,12 +825,15 @@ class MatrixService extends BaseApplicationComponent
 			$blockIds = array($blockIds);
 		}
 
-		// Tell the browser to forget about these
-		craft()->userSession->addJsResourceFlash('js/MatrixInput.js');
-
-		foreach ($blockIds as $blockId)
+		if (!craft()->isConsole())
 		{
-			craft()->userSession->addJsFlash('Craft.MatrixInput.forgetCollapsedBlockId('.$blockId.');');
+			// Tell the browser to forget about these
+			craft()->userSession->addJsResourceFlash('js/MatrixInput.js');
+
+			foreach ($blockIds as $blockId)
+			{
+				craft()->userSession->addJsFlash('Craft.MatrixInput.forgetCollapsedBlockId('.$blockId.');');
+			}
 		}
 
 		// Pass this along to ElementsService for the heavy lifting
@@ -852,7 +932,7 @@ class MatrixService extends BaseApplicationComponent
 		}
 
 		// Tell the browser to collapse any new block IDs
-		if ($collapsedBlockIds)
+		if (!craft()->isConsole() && $collapsedBlockIds)
 		{
 			craft()->userSession->addJsResourceFlash('js/MatrixInput.js');
 
@@ -934,7 +1014,7 @@ class MatrixService extends BaseApplicationComponent
 
 				if (!$this->_blockTypeRecordsById[$blockTypeId])
 				{
-					throw new Exception(Craft::t('No block type exists with the ID “{id}”', array('id' => $blockTypeId)));
+					throw new Exception(Craft::t('No block type exists with the ID “{id}”.', array('id' => $blockTypeId)));
 				}
 			}
 
@@ -966,7 +1046,7 @@ class MatrixService extends BaseApplicationComponent
 
 				if (!$this->_blockRecordsById[$blockId])
 				{
-					throw new Exception(Craft::t('No block exists with the ID “{id}”', array('id' => $blockId)));
+					throw new Exception(Craft::t('No block exists with the ID “{id}”.', array('id' => $blockId)));
 				}
 			}
 

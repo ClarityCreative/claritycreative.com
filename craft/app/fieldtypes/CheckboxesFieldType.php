@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.fieldtypes
  * @since     1.0
  */
@@ -25,7 +25,7 @@ class CheckboxesFieldType extends BaseOptionsFieldType
 	// =========================================================================
 
 	/**
-	 * Returns the type of field this is.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -35,7 +35,7 @@ class CheckboxesFieldType extends BaseOptionsFieldType
 	}
 
 	/**
-	 * Returns the field's input HTML.
+	 * @inheritDoc IFieldType::getInputHtml()
 	 *
 	 * @param string $name
 	 * @param mixed  $values
@@ -49,15 +49,7 @@ class CheckboxesFieldType extends BaseOptionsFieldType
 		// If this is a new entry, look for any default options
 		if ($this->isFresh())
 		{
-			$values = array();
-
-			foreach ($options as $option)
-			{
-				if (!empty($option['default']))
-				{
-					$values[] = $option['value'];
-				}
-			}
+			$values = $this->getDefaultValue();
 		}
 
 		return craft()->templates->render('_includes/forms/checkboxGroup', array(
@@ -71,7 +63,7 @@ class CheckboxesFieldType extends BaseOptionsFieldType
 	// =========================================================================
 
 	/**
-	 * Returns the label for the Options setting.
+	 * @inheritDoc BaseOptionsFieldType::getOptionsSettingsLabel()
 	 *
 	 * @return string
 	 */

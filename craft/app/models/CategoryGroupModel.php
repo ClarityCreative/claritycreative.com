@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     2.0
  */
@@ -45,7 +45,7 @@ class CategoryGroupModel extends BaseModel
 	}
 
 	/**
-	 * Returns the section's locale models
+	 * Returns the category's locale models.
 	 *
 	 * @return array
 	 */
@@ -82,6 +82,8 @@ class CategoryGroupModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

@@ -1,12 +1,13 @@
 {% requireEdition CraftPro %}
+{% requireAdmin %}
 
 {% extends "_layouts/cp" %}
 {% set title = "Content Locales"|t %}
 
 {% import "_includes/forms" as forms %}
 
-{% includeJsResource "js/locales.js" %}
-{% includeCssResource "css/locales.css" %}
+{% includejsresource "js/locales.js" %}
+{% includecssresource "css/locales.css" %}
 
 {% includeTranslations
 	"Are you sure you want to delete “{name}” and all its associated content?",
@@ -15,7 +16,11 @@
 	"Reorder",
 	"Delete",
 	"New locale added.",
-	"Unable to add the new locale."
+	"Unable to add the new locale.",
+	"What do you want to do with any content that is only available in {language}?",
+	"Transfer it to:",
+	"Delete it",
+	"Delete {language}"
 %}
 
 {% set crumbs = [
@@ -23,10 +28,11 @@
 ] %}
 
 
-{% set content %}
+{% block content %}
 	<form method="post" accept-charset="UTF-8">
 		<input type="hidden" name="action" value="languageSettings/save">
 		<input type="hidden" name="redirect" value="settings">
+		{{ getCsrfInput() }}
 
 		<h2>{{ "Which locales does your content target?"|t }}</h2>
 
@@ -56,9 +62,9 @@
 			</div>
 		</div>
 	</form>
-{% endset %}
+{% endblock %}
 
-{% set js %}
+{% includejs %}
 	new Craft.Locales(
 	{
 		{%- for locale in craft.i18n.getAllLocales() %}
@@ -74,6 +80,4 @@
 		{%- endfor -%}
 
 	]);
-{% endset %}
-
-{% includeJs js %}
+{% endincludejs %}

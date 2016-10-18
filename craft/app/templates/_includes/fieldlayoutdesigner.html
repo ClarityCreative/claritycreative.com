@@ -15,7 +15,7 @@
 	"Give your tab a name."
 %}
 
-{% includeCssFile "//fonts.googleapis.com/css?family=Coming+Soon" %}
+{% includecssfile "//fonts.googleapis.com/css?family=Coming+Soon" %}
 
 {% macro tab(customizableTabs, tabName, tabFields) %}
 	<div class="fld-tab">
@@ -98,16 +98,18 @@
 
 </div>
 
-{% set js %}
+{% includejs %}
 	var initFLD = function() {
-		new Craft.FieldLayoutDesigner('#fieldlayoutform', {
-			customizableTabs: {{ customizableTabs ? 'true' : 'false' }}
+		new Craft.FieldLayoutDesigner('#{{ "fieldlayoutform"|namespaceInputId }}', {
+			customizableTabs: {{ customizableTabs ? 'true' : 'false' }},
+			fieldInputName: '{{ "fieldLayout[__TAB_NAME__][]"|namespaceInputName|e("js") }}',
+			requiredFieldInputName: '{{ "requiredFields[]"|namespaceInputName|e("js") }}'
 		});
 	};
 
 	{% if tab is defined %}
 
-		var $fldTab = $('#tab-{{ tab }}');
+		var $fldTab = $('#{{ ("tab-"~tab)|namespaceInputId }}');
 
 		if ($fldTab.hasClass('sel'))
 		{
@@ -126,6 +128,4 @@
 		initFLD();
 
 	{% endif %}
-{% endset %}
-
-{% includeJs js %}
+{% endincludejs %}

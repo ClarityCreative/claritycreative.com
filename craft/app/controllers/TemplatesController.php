@@ -9,8 +9,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.controllers
  * @since     1.0
  */
@@ -70,8 +70,7 @@ class TemplatesController extends BaseController
 		// If this is a site request, make sure the offline template exists
 		if (craft()->request->isSiteRequest() && !craft()->templates->doesTemplateExist('offline'))
 		{
-			// Set PathService to use the CP templates path instead
-			craft()->path->setTemplatesPath(craft()->path->getCpTemplatesPath());
+			craft()->templates->setTemplateMode(TemplateMode::CP);
 		}
 
 		// Output the offline template
@@ -132,8 +131,6 @@ class TemplatesController extends BaseController
 				$this->renderTemplate('_special/cantrun', array('reqCheck' => $reqCheck));
 				craft()->end();
 			}
-
-
 		}
 		else
 		{
@@ -161,6 +158,10 @@ class TemplatesController extends BaseController
 			{
 				$template = $prefix.$code;
 			}
+			else if ($code == 503 && craft()->templates->doesTemplateExist($prefix.'offline'))
+			{
+				$template = $prefix.'offline';
+			}
 			else if (craft()->templates->doesTemplateExist($prefix.'error'))
 			{
 				$template = $prefix.'error';
@@ -169,7 +170,7 @@ class TemplatesController extends BaseController
 
 		if (!isset($template))
 		{
-			craft()->path->setTemplatesPath(craft()->path->getCpTemplatesPath());
+			craft()->templates->setTemplateMode(TemplateMode::CP);
 
 			if (craft()->templates->doesTemplateExist($code))
 			{
@@ -183,7 +184,20 @@ class TemplatesController extends BaseController
 
 		try
 		{
-			$this->renderTemplate($template, $error);
+			$variables = array_merge($error);
+
+			// Escape any inner-word underscores, which Markdown mistakes for italics
+			// TODO: This won't be necessary in 3.0 thanks to Parsedown
+			$variables['message'] = preg_replace('/(?<=[a-zA-Z])_(?=[a-zA-Z])/', '\_', $variables['message']);
+
+			// If this is a PHP error and html_errors (http://php.net/manual/en/errorfunc.configuration.php#ini.html-errors)
+			// is enabled, then allow the HTML not get encoded
+			if (strncmp($variables['type'], 'PHP ', 4) === 0 && AppHelper::getPhpConfigValueAsBool('html_errors'))
+			{
+				$variables['message'] = TemplateHelper::getRaw($variables['message']);
+			}
+
+			$this->renderTemplate($template, $variables);
 		}
 		catch (\Exception $e)
 		{
@@ -194,7 +208,7 @@ class TemplatesController extends BaseController
 			else
 			{
 				// Just output the error message
-				echo $e->getMessage();
+				echo str_replace(array('“', '”', '‘', '’'), array('"', '"', '\'', '\''), $e->getMessage());
 			}
 		}
 	}

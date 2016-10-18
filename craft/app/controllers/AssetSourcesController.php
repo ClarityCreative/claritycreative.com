@@ -7,17 +7,30 @@ namespace Craft;
  *
  * Note that all actions in the controller require an authenticated Craft session via {@link BaseController::allowAnonymous}.
  *
- * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
- * @package   craft.app.controllers
- * @since     1.0
+ * @author     Pixel & Tonic, Inc. <support@pixelandtonic.com>
+ * @copyright  Copyright (c) 2014, Pixel & Tonic, Inc.
+ * @license    http://craftcms.com/license Craft License Agreement
+ * @see        http://craftcms.com
+ * @package    craft.app.controllers
+ * @since      1.0
+ * @deprecated This class will have several breaking changes in Craft 3.0.
  */
 class AssetSourcesController extends BaseController
 {
 	// Public Methods
 	// =========================================================================
+
+	/**
+	 * @inheritDoc BaseController::init()
+	 *
+	 * @throws HttpException
+	 * @return null
+	 */
+	public function init()
+	{
+		// All asset source actions require an admin
+		craft()->userSession->requireAdmin();
+	}
 
 	/**
 	 * Shows the asset source list.
@@ -26,10 +39,8 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionSourceIndex()
 	{
-		craft()->userSession->requireAdmin();
-
 		$variables['sources'] = craft()->assetSources->getAllSources();
-		$this->renderTemplate('settings/assets/sources/index', $variables);
+		$this->renderTemplate('settings/assets/sources/_index', $variables);
 	}
 
 	/**
@@ -42,8 +53,6 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionEditSource(array $variables = array())
 	{
-		craft()->userSession->requireAdmin();
-
 		if (empty($variables['source']))
 		{
 			if (!empty($variables['sourceId']))
@@ -87,7 +96,7 @@ class AssetSourcesController extends BaseController
 		$variables['crumbs'] = array(
 			array('label' => Craft::t('Settings'), 'url' => UrlHelper::getUrl('settings')),
 			array('label' => Craft::t('Assets'),   'url' => UrlHelper::getUrl('settings/assets')),
-			array('label' => Craft::t('Sources'),  'url' => UrlHelper::getUrl('settings/assets')),
+			array('label' => Craft::t('Asset Sources'),  'url' => UrlHelper::getUrl('settings/assets')),
 		);
 
 		$variables['tabs'] = array(
@@ -105,7 +114,6 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionSaveSource()
 	{
-		craft()->userSession->requireAdmin();
 		$this->requirePostRequest();
 
 		$existingSourceId = craft()->request->getPost('sourceId');
@@ -119,7 +127,8 @@ class AssetSourcesController extends BaseController
 			$source = new AssetSourceModel();
 		}
 
-		$source->name = craft()->request->getPost('name');
+		$source->name   = craft()->request->getPost('name');
+		$source->handle = craft()->request->getPost('handle');
 
 		if (craft()->getEdition() == Craft::Pro)
 		{
@@ -127,18 +136,15 @@ class AssetSourcesController extends BaseController
 		}
 
 		$typeSettings = craft()->request->getPost('types');
+
 		if (isset($typeSettings[$source->type]))
 		{
-			if (!$source->settings)
-			{
-				$source->settings = array();
-			}
-
+			$source->settings = array();
 			$source->settings = array_merge($source->settings, $typeSettings[$source->type]);
 		}
 
 		// Set the field layout
-		$fieldLayout = craft()->fields->assembleLayoutFromPost(false);
+		$fieldLayout = craft()->fields->assembleLayoutFromPost();
 		$fieldLayout->type = ElementType::Asset;
 		$source->setFieldLayout($fieldLayout);
 
@@ -166,7 +172,6 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionReorderSources()
 	{
-		craft()->userSession->requireAdmin();
 		$this->requirePostRequest();
 		$this->requireAjaxRequest();
 
@@ -183,7 +188,6 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionDeleteSource()
 	{
-		craft()->userSession->requireAdmin();
 		$this->requirePostRequest();
 		$this->requireAjaxRequest();
 
@@ -201,7 +205,6 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionGetS3Buckets()
 	{
-		craft()->userSession->requireAdmin();
 		craft()->requireEdition(Craft::Pro);
 
 		$keyId = craft()->request->getRequiredPost('keyId');
@@ -224,7 +227,6 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionGetRackspaceRegions()
 	{
-		craft()->userSession->requireAdmin();
 		craft()->requireEdition(Craft::Pro);
 
 		$username = craft()->request->getRequiredPost('username');
@@ -253,7 +255,6 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionGetRackspaceContainers()
 	{
-		craft()->userSession->requireAdmin();
 		craft()->requireEdition(Craft::Pro);
 
 		$username = craft()->request->getRequiredPost('username');
@@ -283,7 +284,6 @@ class AssetSourcesController extends BaseController
 	 */
 	public function actionGetGoogleCloudBuckets()
 	{
-		craft()->userSession->requireAdmin();
 		craft()->requireEdition(Craft::Pro);
 
 		$keyId = craft()->request->getRequiredPost('keyId');

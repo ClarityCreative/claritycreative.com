@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.widgets
  * @since     1.0
  */
@@ -25,7 +25,7 @@ class RecentEntriesWidget extends BaseWidget
 	// =========================================================================
 
 	/**
-	 * Returns the type of widget this is.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -35,7 +35,7 @@ class RecentEntriesWidget extends BaseWidget
 	}
 
 	/**
-	 * Returns the widget's body HTML.
+	 * @inheritDoc ISavableComponentType::getSettingsHtml()
 	 *
 	 * @return string
 	 */
@@ -47,33 +47,59 @@ class RecentEntriesWidget extends BaseWidget
 	}
 
 	/**
-	 * Gets the widget's title.
+	 * @inheritDoc IWidget::getTitle()
 	 *
 	 * @return string
 	 */
 	public function getTitle()
 	{
-		if (craft()->getEdition() >= Craft::Client)
+		$sectionId = $this->getSettings()->section;
+
+		if (is_numeric($sectionId))
 		{
-			$sectionId = $this->getSettings()->section;
+			$section = craft()->sections->getSectionById($sectionId);
 
-			if (is_numeric($sectionId))
+			if ($section)
 			{
-				$section = craft()->sections->getSectionById($sectionId);
-
-				if ($section)
-				{
-					$translatedSectionName = Craft::t($section->name);
-					return Craft::t('Recently in {section}', array('section' => $translatedSectionName));
-				}
+				$title = Craft::t('Recent {section} Entries', array(
+					'section' => Craft::t($section->name)
+				));
 			}
 		}
 
-		return Craft::t('Recent Entries');
+		if (!isset($title))
+		{
+			$title = Craft::t('Recent Entries');
+		}
+
+		// See if they are pulling entries from a different locale
+		$targetLocale = $this->_getTargetLocale();
+
+		if ($targetLocale && $targetLocale != craft()->language)
+		{
+			$locale = craft()->i18n->getLocaleById($targetLocale);
+
+			$title = Craft::t('{title} ({locale})', array(
+				'title'  => $title,
+				'locale' => $locale->getName()
+			));
+		}
+
+		return $title;
 	}
 
 	/**
-	 * Returns the widget's body HTML.
+	 * @inheritDoc IWidget::getIconPath()
+	 *
+	 * @return string
+	 */
+	public function getIconPath()
+	{
+		return craft()->path->getResourcesPath().'images/widgets/recent-entries.svg';
+	}
+
+	/**
+	 * @inheritDoc IWidget::getBodyHtml()
 	 *
 	 * @return string|false
 	 */
@@ -81,14 +107,11 @@ class RecentEntriesWidget extends BaseWidget
 	{
 		$params = array();
 
-		if (craft()->getEdition() >= Craft::Client)
-		{
-			$sectionId = $this->getSettings()->section;
+		$sectionId = $this->getSettings()->section;
 
-			if (is_numeric($sectionId))
-			{
-				$params['sectionId'] = (int)$sectionId;
-			}
+		if (is_numeric($sectionId))
+		{
+			$params['sectionId'] = (int)$sectionId;
 		}
 
 		$js = 'new Craft.RecentEntriesWidget('.$this->model->id.', '.JsonHelper::encode($params).');';
@@ -108,7 +131,7 @@ class RecentEntriesWidget extends BaseWidget
 	// =========================================================================
 
 	/**
-	 * Defines the settings.
+	 * @inheritDoc BaseSavableComponentType::defineSettings()
 	 *
 	 * @return array
 	 */
@@ -116,6 +139,7 @@ class RecentEntriesWidget extends BaseWidget
 	{
 		return array(
 			'section' => array(AttributeType::Mixed, 'default' => '*'),
+			'locale'  => array(AttributeType::Locale, 'default' => craft()->language),
 			'limit'   => array(AttributeType::Number, 'default' => 10),
 		);
 	}
@@ -130,19 +154,12 @@ class RecentEntriesWidget extends BaseWidget
 	 */
 	private function _getEntries()
 	{
-		// Make sure that the user is actually allowed to edit entries in the current locale. Otherwise grab entries in
-		// their first editable locale.
-		$editableLocaleIds = craft()->i18n->getEditableLocaleIds();
-		$targetLocale = craft()->language;
+		$targetLocale = $this->_getTargetLocale();
 
-		if (!$editableLocaleIds)
+		if (!$targetLocale)
 		{
+			// Hopeless
 			return array();
-		}
-
-		if (!in_array($targetLocale, $editableLocaleIds))
-		{
-			$targetLocale = $editableLocaleIds[0];
 		}
 
 		// Normalize the target section ID value.
@@ -159,14 +176,21 @@ class RecentEntriesWidget extends BaseWidget
 			return array();
 		}
 
+		$limit = $this->getSettings()->limit;
+
+		if (!$limit)
+		{
+			$limit = 100;
+		}
+
 		$criteria = craft()->elements->getCriteria(ElementType::Entry);
 		$criteria->status = null;
 		$criteria->localeEnabled = null;
 		$criteria->locale = $targetLocale;
 		$criteria->sectionId = $targetSectionId;
 		$criteria->editable = true;
-		$criteria->limit = $this->getSettings()->limit;
-		$criteria->order = 'dateCreated desc';
+		$criteria->limit = $limit;
+		$criteria->order = 'elements.dateCreated desc';
 
 		return $criteria->find();
 	}
@@ -189,5 +213,37 @@ class RecentEntriesWidget extends BaseWidget
 		}
 
 		return $sectionIds;
+	}
+
+	/**
+	 * Returns the target locale for the widget.
+	 *
+	 * @return string|false
+	 */
+	private function _getTargetLocale()
+	{
+		// Make sure that the user is actually allowed to edit entries in the current locale. Otherwise grab entries in
+		// their first editable locale.
+
+		// Figure out which locales the user is actually allowed to edit
+		$editableLocaleIds = craft()->i18n->getEditableLocaleIds();
+
+		// If they aren't allowed to edit *any* locales, return false
+		if (!$editableLocaleIds)
+		{
+			return false;
+		}
+
+		// Figure out which locale was selected in the settings
+		$targetLocale = $this->getSettings()->locale;
+
+		// Only use that locale if it still exists and they're allowed to edit it.
+		// Otherwise go with the first locale that they are allowed to edit.
+		if (!in_array($targetLocale, $editableLocaleIds))
+		{
+			$targetLocale = $editableLocaleIds[0];
+		}
+
+		return $targetLocale;
 	}
 }

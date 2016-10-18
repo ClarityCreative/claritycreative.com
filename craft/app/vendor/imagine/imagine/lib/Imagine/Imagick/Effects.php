@@ -13,7 +13,7 @@ namespace Imagine\Imagick;
 
 use Imagine\Effects\EffectsInterface;
 use Imagine\Exception\RuntimeException;
-use Imagine\Image\Color;
+use Imagine\Image\Palette\Color\ColorInterface;
 
 /**
  * Effects implementation using the Imagick PHP extension
@@ -22,7 +22,7 @@ class Effects implements EffectsInterface
 {
     private $imagick;
 
-    public function __construct(\Imagick $imagick)
+    public function __construct(Imagick $imagick)
     {
         $this->imagick = $imagick;
     }
@@ -33,7 +33,7 @@ class Effects implements EffectsInterface
     public function gamma($correction)
     {
         try {
-            $this->imagick->gammaImage($correction, \Imagick::CHANNEL_ALL);
+            $this->imagick->gammaImage($correction, Imagick::CHANNEL_ALL);
         } catch (\ImagickException $e) {
             throw new RuntimeException('Failed to apply gamma correction to the image');
         }
@@ -47,7 +47,7 @@ class Effects implements EffectsInterface
     public function negative()
     {
         try {
-            $this->imagick->negateImage(false, \Imagick::CHANNEL_ALL);
+            $this->imagick->negateImage(false, Imagick::CHANNEL_ALL);
         } catch (\ImagickException $e) {
             throw new RuntimeException('Failed to negate the image');
         }
@@ -61,7 +61,7 @@ class Effects implements EffectsInterface
     public function grayscale()
     {
         try {
-            $this->imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALE);
+            $this->imagick->setImageType(Imagick::IMGTYPE_GRAYSCALE);
         } catch (\ImagickException $e) {
             throw new RuntimeException('Failed to grayscale the image');
         }
@@ -72,7 +72,7 @@ class Effects implements EffectsInterface
     /**
      * {@inheritdoc}
      */
-    public function colorize(Color $color)
+    public function colorize(ColorInterface $color)
     {
         try {
             $this->imagick->colorizeImage((string) $color, 1);
@@ -92,6 +92,20 @@ class Effects implements EffectsInterface
             $this->imagick->sharpenImage(2, 1);
         } catch (\ImagickException $e) {
             throw new RuntimeException('Failed to sharpen the image');
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function blur($sigma = 1)
+    {
+        try {
+            $this->imagick->gaussianBlurImage(0, $sigma);
+        } catch (\ImagickException $e) {
+            throw new RuntimeException('Failed to blur the image', $e->getCode(), $e);
         }
 
         return $this;

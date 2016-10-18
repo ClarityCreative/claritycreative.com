@@ -6,13 +6,18 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.i18n
  * @since     1.0
  */
 class LocaleData extends \CLocale
 {
+	// Properties
+	// =========================================================================
+
+	private $_territories;
+
 	// Public Methods
 	// =========================================================================
 
@@ -93,6 +98,31 @@ class LocaleData extends \CLocale
 		}
 
 		return $this->_dateFormatter;
+	}
+
+	/**
+	 * Returns an array of territories for the locale instance or null, if none
+	 * exist.
+	 *
+	 * @return string[]|null An array of all territories for the given locale,
+	 *                       or null, if none exist.
+	 */
+	public function getAllTerritories()
+	{
+		if (!$this->_territories)
+		{
+			if (isset($this->_data['territories']))
+			{
+				$territories = $this->_data['territories'];
+
+				foreach ($territories as $key => $territory)
+				{
+					$this->_territories[] = $this->getTerritory($key);
+				}
+			}
+		}
+
+		return $this->_territories;
 	}
 
 }

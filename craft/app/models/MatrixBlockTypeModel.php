@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.3
  */
@@ -70,6 +70,9 @@ class MatrixBlockTypeModel extends BaseModel
 		{
 			$this->_fields = array();
 
+			// Preload all of the fields in this block type's context
+			craft()->fields->getAllFields(null, 'matrixBlockType:'.$this->id);
+
 			$fieldLayoutFields = $this->getFieldLayout()->getFields();
 
 			foreach ($fieldLayoutFields as $fieldLayoutField)
@@ -99,6 +102,8 @@ class MatrixBlockTypeModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.cache
  * @since     1.0
  */
@@ -116,14 +116,14 @@ class FileCache extends \CFileCache
 
 		if ($this->directoryLevel > 0)
 		{
-			IOHelper::createFolder(IOHelper::getFolderName($cacheFile), IOHelper::getWritableFolderPermissions());
+			IOHelper::createFolder(IOHelper::getFolderName($cacheFile));
 		}
 
 		if ($this->_originalKey == 'useWriteFileLock')
 		{
 			if (IOHelper::writeToFile($cacheFile, $value, true, false, true) !== false)
 			{
-				IOHelper::changePermissions($cacheFile, IOHelper::getWritableFilePermissions());
+				IOHelper::changePermissions($cacheFile, craft()->config->get('defaultFilePermissions'));
 				return IOHelper::touch($cacheFile, $expire);
 			}
 			else
@@ -135,7 +135,7 @@ class FileCache extends \CFileCache
 		{
 			if (IOHelper::writeToFile($cacheFile, $this->embedExpiry ? $expire.$value : $value) !== false)
 			{
-				IOHelper::changePermissions($cacheFile, IOHelper::getWritableFilePermissions());
+				IOHelper::changePermissions($cacheFile, craft()->config->get('defaultFilePermissions'));
 				return $this->embedExpiry ? true : IOHelper::touch($cacheFile, $expire);
 			}
 			else

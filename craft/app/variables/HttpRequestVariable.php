@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.variables
  * @since     1.0
  */
@@ -15,6 +15,46 @@ class HttpRequestVariable
 {
 	// Public Methods
 	// =========================================================================
+
+	/**
+	 * Returns whether this is a GET request.
+	 *
+	 * @return bool Whether this is a GET request
+	 */
+	public function isGet()
+	{
+		return craft()->request->getIsGetRequest();
+	}
+
+	/**
+	 * Returns whether this is a POST request.
+	 *
+	 * @return bool Whether this is a POST request
+	 */
+	public function isPost()
+	{
+		return craft()->request->getIsPostRequest();
+	}
+
+	/**
+	 * Returns whether this is a DELETE request.
+	 *
+	 * @return bool Whether this is a DELETE request
+	 */
+	public function isDelete()
+	{
+		return craft()->request->getIsDeleteRequest();
+	}
+
+	/**
+	 * Returns whether this is a PUT request.
+	 *
+	 * @return bool Whether this is a PUT request
+	 */
+	public function isPut()
+	{
+		return craft()->request->getIsPutRequest();
+	}
 
 	/**
 	 * Returns whether this is an Ajax request.
@@ -159,11 +199,11 @@ class HttpRequestVariable
 	}
 
 	/**
-	 * Returns a {@link \CHttpCookie} if it exists, otherwise, null.
+	 * Returns a {@link HttpCookie} if it exists, otherwise, null.
 	 *
 	 * @param $name
 	 *
-	 * @return CHttpCookie|null
+	 * @return HttpCookie|null
 	 */
 	public function getCookie($name)
 	{
@@ -325,4 +365,60 @@ class HttpRequestVariable
 		return craft()->request->getPort();
 	}
 
+	/**
+	 * Returns the random token used to perform CSRF validation.
+	 *
+	 * The token will be read from cookie first. If not found, a new token will be generated.
+	 *
+	 * @return string The random token for CSRF validation.
+	 */
+	public function getCsrfToken()
+	{
+		return craft()->request->getCsrfToken();
+	}
+
+	/**
+	 * Returns part of the request URL that is after the question mark.
+	 *
+	 * @return string The part of the request URL that is after the question mark.
+	 */
+	public function getQueryString()
+	{
+		return craft()->request->getQueryString();
+	}
+
+	/**
+	 * Returns the request’s query string, without the p= parameter.
+	 *
+	 * @return string The query string.
+	 */
+	public function getQueryStringWithoutPath()
+	{
+		return craft()->request->getQueryStringWithoutPath();
+	}
+
+	/**
+	 * Retrieves the best guess of the client’s actual IP address taking into account numerous HTTP proxy headers due to
+	 * variations in how different ISPs handle IP addresses in headers between hops.
+	 *
+	 * Considering any of these server vars besides REMOTE_ADDR can be spoofed, this method should not be used when you
+	 * need a trusted source for the IP address. Use `$_SERVER['REMOTE_ADDR']` instead.
+	 *
+	 * @return string The IP address.
+	 */
+	public function getIpAddress()
+	{
+		return craft()->request->getIpAddress();
+	}
+
+	/**
+	 * Returns whether the client is running "Windows", "Mac", "Linux" or "Other", based on the
+	 * browser's UserAgent string.
+	 *
+	 * @return string The OS the client is running.
+	 */
+	public function getClientOs()
+	{
+		return craft()->request->getClientOs();
+	}
 }

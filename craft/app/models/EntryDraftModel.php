@@ -1,15 +1,13 @@
 <?php
 namespace Craft;
 
-craft()->requireEdition(Craft::Client);
-
 /**
  * Class EntryDraftModel
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -19,7 +17,7 @@ class EntryDraftModel extends BaseEntryRevisionModel
 	// =========================================================================
 
 	/**
-	 * Populates a new model instance with a given set of attributes.
+	 * @inheritDoc BaseModel::populateModel()
 	 *
 	 * @param mixed $attributes
 	 *
@@ -63,6 +61,8 @@ class EntryDraftModel extends BaseEntryRevisionModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -58,6 +58,16 @@ class AssetFolderModel extends BaseModel
 	}
 
 	/**
+	 * Manually set the child folders.
+	 *
+	 * @param array $children
+	 */
+	public function setChildren(array $children)
+	{
+		$this->_children = $children;
+	}
+
+	/**
 	 * @return AssetFolderModel|null
 	 */
 	public function getParent()
@@ -88,7 +98,7 @@ class AssetFolderModel extends BaseModel
 	}
 
 	/**
-	 * Sets an attribute's value.
+	 * @inheritDoc BaseModel::setAttribute()
 	 *
 	 * @param string $name
 	 * @param mixed  $value
@@ -105,7 +115,7 @@ class AssetFolderModel extends BaseModel
 	}
 
 	/**
-	 * Gets an attribute's value.
+	 * @inheritDoc BaseModel::getAttribute()
 	 *
 	 * @param string $name
 	 * @param bool   $flattenValue
@@ -128,6 +138,8 @@ class AssetFolderModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

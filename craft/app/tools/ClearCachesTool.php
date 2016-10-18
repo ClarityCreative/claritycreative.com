@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.tools
  * @since     1.0
  */
@@ -17,7 +17,7 @@ class ClearCachesTool extends BaseTool
 	// =========================================================================
 
 	/**
-	 * Returns the tool name.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class ClearCachesTool extends BaseTool
 	}
 
 	/**
-	 * Returns the tool's icon value.
+	 * @inheritDoc ITool::getIconValue()
 	 *
 	 * @return string
 	 */
@@ -37,7 +37,7 @@ class ClearCachesTool extends BaseTool
 	}
 
 	/**
-	 * Returns the tool's options HTML.
+	 * @inheritDoc ITool::getOptionsHtml()
 	 *
 	 * @return string
 	 */
@@ -55,7 +55,7 @@ class ClearCachesTool extends BaseTool
 	}
 
 	/**
-	 * Returns the tool's button label.
+	 * @inheritDoc ITool::getButtonLabel()
 	 *
 	 * @return string
 	 */
@@ -65,7 +65,7 @@ class ClearCachesTool extends BaseTool
 	}
 
 	/**
-	 * Performs the tool's action.
+	 * @inheritDoc ITool::performAction()
 	 *
 	 * @param array $params
 	 *
@@ -127,6 +127,7 @@ class ClearCachesTool extends BaseTool
 		{
 			craft()->db->createCommand()->truncateTable('assettransformindex');
 		}
+
 		if ($params['caches'] == '*' || in_array('assetIndexingData', $params['caches']))
 		{
 			craft()->db->createCommand()->truncateTable('assetindexdata');
@@ -151,7 +152,7 @@ class ClearCachesTool extends BaseTool
 		$folders = array(
 			$obfuscate ? md5('dataCache') : 'dataCache'                                             => Craft::t('Data caches'),
 			$obfuscate ? md5($runtimePath.'cache') : $runtimePath.'cache'                           => Craft::t('RSS caches'),
-			$obfuscate ? md5($runtimePath.'assets') : $runtimePath.'assets'                         => Craft::t('Asset thumbs'),
+			$obfuscate ? md5($runtimePath.'assets') : $runtimePath.'assets'                         => Craft::t('Asset caches'),
 			$obfuscate ? md5($runtimePath.'compiled_templates') : $runtimePath.'compiled_templates' => Craft::t('Compiled templates'),
 			$obfuscate ? md5($runtimePath.'temp') : $runtimePath.'temp'                             => Craft::t('Temp files'),
 		);

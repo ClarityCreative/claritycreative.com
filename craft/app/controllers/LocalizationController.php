@@ -11,8 +11,8 @@ craft()->requireEdition(Craft::Pro);
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.controllers
  * @since     1.0
  */
@@ -20,6 +20,18 @@ class LocalizationController extends BaseController
 {
 	// Public Methods
 	// =========================================================================
+
+	/**
+	 * @inheritDoc BaseController::init()
+	 *
+	 * @throws HttpException
+	 * @return null
+	 */
+	public function init()
+	{
+		// All localization related actions require an admin
+		craft()->userSession->requireAdmin();
+	}
 
 	/**
 	 * Adds a new a locale.
@@ -31,8 +43,8 @@ class LocalizationController extends BaseController
 		$this->requirePostRequest();
 		$this->requireAjaxRequest();
 
-		$locale = craft()->request->getRequiredPost('id');
-		$success = craft()->i18n->addSiteLocale($locale);
+		$localeId = craft()->request->getRequiredPost('id');
+		$success = craft()->i18n->addSiteLocale($localeId);
 		$this->returnJson(array('success' => $success));
 	}
 
@@ -46,8 +58,8 @@ class LocalizationController extends BaseController
 		$this->requirePostRequest();
 		$this->requireAjaxRequest();
 
-		$locales = JsonHelper::decode(craft()->request->getRequiredPost('ids'));
-		$success = craft()->i18n->reorderSiteLocales($locales);
+		$localeIds = JsonHelper::decode(craft()->request->getRequiredPost('ids'));
+		$success = craft()->i18n->reorderSiteLocales($localeIds);
 		$this->returnJson(array('success' => $success));
 	}
 
@@ -61,8 +73,10 @@ class LocalizationController extends BaseController
 		$this->requirePostRequest();
 		$this->requireAjaxRequest();
 
-		$locale = craft()->request->getRequiredPost('id');
-		$success = craft()->i18n->deleteSiteLocale($locale);
+		$localeId = craft()->request->getRequiredPost('id');
+		$transferContentTo = craft()->request->getPost('transferContentTo');
+
+		$success = craft()->i18n->deleteSiteLocale($localeId, $transferContentTo);
 		$this->returnJson(array('success' => $success));
 	}
 }

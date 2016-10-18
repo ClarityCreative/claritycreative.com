@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.elementtypes
  * @since     1.0
  */
@@ -17,7 +17,7 @@ class AssetElementType extends BaseElementType
 	// =========================================================================
 
 	/**
-	 * Returns the element type name.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns whether this element type has content.
+	 * @inheritDoc IElementType::hasContent()
 	 *
 	 * @return bool
 	 */
@@ -37,7 +37,7 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns whether this element type has titles.
+	 * @inheritDoc IElementType::hasTitles()
 	 *
 	 * @return bool
 	 */
@@ -47,7 +47,7 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns whether this element type stores data on a per-locale basis.
+	 * @inheritDoc IElementType::isLocalized()
 	 *
 	 * @return bool
 	 */
@@ -57,7 +57,7 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns this element type's sources.
+	 * @inheritDoc IElementType::getSources()
 	 *
 	 * @param string|null $context
 	 *
@@ -74,13 +74,26 @@ class AssetElementType extends BaseElementType
 			$sourceIds = craft()->assetSources->getAllSourceIds();
 		}
 
-		$tree = craft()->assets->getFolderTreeBySourceIds($sourceIds);
+		if ($context == 'settings')
+		{
+			$additionalCriteria = array('parentId' => ':empty:');
+		}
+		else
+		{
+			$additionalCriteria = array();
+		}
 
-		return $this->_assembleSourceList($tree);
+		$tree = craft()->assets->getFolderTreeBySourceIds($sourceIds, $additionalCriteria);
+		$sources = $this->_assembleSourceList($tree, $context != 'settings');
+
+		// Allow plugins to modify the sources
+		craft()->plugins->call('modifyAssetSources', array(&$sources, $context));
+
+		return $sources;
 	}
 
 	/**
-	 * Returns a source by its key and context.
+	 * @inheritDoc IElementType::getSource()
 	 *
 	 * @param string      $key
 	 * @param string|null $context
@@ -103,7 +116,79 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Defines which model attributes should be searchable.
+	 * @inheritDoc IElementType::getAvailableActions()
+	 *
+	 * @param string|null $source
+	 *
+	 * @return array|null
+	 */
+	public function getAvailableActions($source = null)
+	{
+		$actions = array();
+
+		if (preg_match('/^folder:(\d+)$/', $source, $matches))
+		{
+			$folderId = $matches[1];
+
+			// View
+			$viewAction = craft()->elements->getAction('View');
+			$viewAction->setParams(array(
+				'label' => Craft::t('View asset'),
+			));
+			$actions[] = $viewAction;
+
+			// Download
+			$actions[] = 'DownloadFile';
+
+			// Edit
+			$editAction = craft()->elements->getAction('Edit');
+			$editAction->setParams(array(
+				'label' => Craft::t('Edit asset'),
+			));
+			$actions[] = $editAction;
+
+			// Rename File
+			if (
+				craft()->assets->canUserPerformAction($folderId, 'removeFromAssetSource') &&
+				craft()->assets->canUserPerformAction($folderId, 'uploadToAssetSource')
+			)
+			{
+				$actions[] = 'RenameFile';
+			}
+
+			// Replace File
+			if (craft()->assets->canUserPerformAction($folderId, 'uploadToAssetSource'))
+			{
+				$actions[] = 'ReplaceFile';
+			}
+
+			// Copy Reference Tag
+			$copyRefTagAction = craft()->elements->getAction('CopyReferenceTag');
+			$copyRefTagAction->setParams(array(
+				'elementType' => 'asset',
+			));
+			$actions[] = $copyRefTagAction;
+
+			// Delete
+			if (craft()->assets->canUserPerformAction($folderId, 'removeFromAssetSource'))
+			{
+				$actions[] = 'DeleteAssets';
+			}
+		}
+
+		// Allow plugins to add additional actions
+		$allPluginActions = craft()->plugins->call('addAssetActions', array($source), true);
+
+		foreach ($allPluginActions as $pluginActions)
+		{
+			$actions = array_merge($actions, $pluginActions);
+		}
+
+		return $actions;
+	}
+
+	/**
+	 * @inheritDoc IElementType::defineSearchableAttributes()
 	 *
 	 * @return array
 	 */
@@ -113,24 +198,75 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns the attributes that can be shown/sorted by in table views.
+	 * @inheritDoc IElementType::defineSortableAttributes()
+	 *
+	 * @return array
+	 */
+	public function defineSortableAttributes()
+	{
+		$attributes = array(
+			'title'        => Craft::t('Title'),
+			'filename'     => Craft::t('Filename'),
+			'size'         => Craft::t('File Size'),
+			'dateModified' => Craft::t('File Modification Date'),
+			'dateCreated'  => Craft::t('Date Uploaded'),
+			'dateUpdated'  => Craft::t('Date Updated'),
+		);
+
+		// Allow plugins to modify the attributes
+		craft()->plugins->call('modifyAssetSortableAttributes', array(&$attributes));
+
+		return $attributes;
+	}
+
+	/**
+	 * @inheritDoc IElementType::defineAvailableTableAttributes()
+	 *
+	 * @return array
+	 */
+	public function defineAvailableTableAttributes()
+	{
+		$attributes = array(
+			'title'        => array('label' => Craft::t('Title')),
+			'filename'     => array('label' => Craft::t('Filename')),
+			'size'         => array('label' => Craft::t('File Size')),
+			'kind'         => array('label' => Craft::t('File Kind')),
+			'imageSize'    => array('label' => Craft::t('Image Size')),
+			'width'        => array('label' => Craft::t('Image Width')),
+			'height'       => array('label' => Craft::t('Image Height')),
+			'id'           => array('label' => Craft::t('ID')),
+			'dateModified' => array('label' => Craft::t('File Modified Date')),
+			'dateCreated'  => array('label' => Craft::t('Date Created')),
+			'dateUpdated'  => array('label' => Craft::t('Date Updated')),
+		);
+
+		// Allow plugins to modify the attributes
+		$pluginAttributes = craft()->plugins->call('defineAdditionalAssetTableAttributes', array(), true);
+
+		foreach ($pluginAttributes as $thisPluginAttributes)
+		{
+			$attributes = array_merge($attributes, $thisPluginAttributes);
+		}
+
+		return $attributes;
+	}
+
+	/**
+	 * @inheritDoc IElementType::getDefaultTableAttributes()
 	 *
 	 * @param string|null $source
 	 *
 	 * @return array
 	 */
-	public function defineTableAttributes($source = null)
+	public function getDefaultTableAttributes($source = null)
 	{
-		return array(
-			'title'        => Craft::t('Title'),
-			'filename'     => Craft::t('Filename'),
-			'size'         => Craft::t('Size'),
-			'dateModified' => Craft::t('Date Modified'),
-		);
+		$attributes = array('filename', 'size', 'dateModified');
+
+		return $attributes;
 	}
 
 	/**
-	 * Returns the table view HTML for a given attribute.
+	 * @inheritDoc IElementType::getTableAttributeHtml()
 	 *
 	 * @param BaseElementModel $element
 	 * @param string           $attribute
@@ -139,11 +275,24 @@ class AssetElementType extends BaseElementType
 	 */
 	public function getTableAttributeHtml(BaseElementModel $element, $attribute)
 	{
+		// First give plugins a chance to set this
+		$pluginAttributeHtml = craft()->plugins->callFirst('getAssetTableAttributeHtml', array($element, $attribute), true);
+
+		if ($pluginAttributeHtml !== null)
+		{
+			return $pluginAttributeHtml;
+		}
+
 		switch ($attribute)
 		{
 			case 'filename':
 			{
-				return '<span style="word-break: break-word;">'.$element->filename.'</span>';
+				return HtmlHelper::encodeParams('<span style="word-break: break-word;">{fileName}</span>', array('fileName' => $element->filename));
+			}
+
+			case 'kind':
+			{
+				return IOHelper::getFileKindLabel($element->kind);
 			}
 
 			case 'size':
@@ -158,18 +307,24 @@ class AssetElementType extends BaseElementType
 				}
 			}
 
-			case 'dateModified':
+			case 'imageSize':
 			{
-				$date = $element->$attribute;
-
-				if ($date)
+				if (($width = $element->getWidth()) && ($height = $element->getHeight()))
 				{
-					return $date->localeDate();
+					return "{$width} × {$height}";
 				}
 				else
 				{
 					return '';
 				}
+			}
+
+			case 'width':
+			case 'height':
+			{
+				$size = $element->$attribute;
+
+				return ($size ? $size.'px' : '');
 			}
 
 			default:
@@ -180,26 +335,29 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Defines any custom element criteria attributes for this element type.
+	 * @inheritDoc IElementType::defineCriteriaAttributes()
 	 *
 	 * @return array
 	 */
 	public function defineCriteriaAttributes()
 	{
 		return array(
-			'sourceId' => AttributeType::Number,
-			'folderId' => AttributeType::Number,
-			'filename' => AttributeType::String,
-			'kind'     => AttributeType::Mixed,
-			'width'    => AttributeType::Number,
-			'height'   => AttributeType::Number,
-			'size'     => AttributeType::Number,
-			'order'    => array(AttributeType::String, 'default' => 'title asc'),
+			'filename'          => AttributeType::String,
+			'folderId'          => AttributeType::Number,
+			'height'            => AttributeType::Number,
+			'includeSubfolders' => AttributeType::Bool,
+			'kind'              => AttributeType::Mixed,
+			'order'             => array(AttributeType::String, 'default' => 'title asc'),
+			'size'              => AttributeType::Number,
+			'source'            => AttributeType::Handle,
+			'sourceId'          => AttributeType::Number,
+			'width'             => AttributeType::Number,
+			'withTransforms'    => AttributeType::Mixed,
 		);
 	}
 
 	/**
-	 * Modifies an element query targeting elements of this type.
+	 * @inheritDoc IElementType::modifyElementsQuery()
 	 *
 	 * @param DbCommand            $query
 	 * @param ElementCriteriaModel $criteria
@@ -209,17 +367,36 @@ class AssetElementType extends BaseElementType
 	public function modifyElementsQuery(DbCommand $query, ElementCriteriaModel $criteria)
 	{
 		$query
-			->addSelect('assetfiles.sourceId, assetfiles.folderId, assetfiles.filename, assetfiles.kind, assetfiles.width, assetfiles.height, assetfiles.size, assetfiles.dateModified')
-			->join('assetfiles assetfiles', 'assetfiles.id = elements.id');
+			->addSelect('assetfiles.sourceId, assetfiles.folderId, assetfiles.filename, assetfiles.kind, assetfiles.width, assetfiles.height, assetfiles.size, assetfiles.dateModified, assetfolders.path as folderPath')
+			->join('assetfiles assetfiles', 'assetfiles.id = elements.id')
+			->join('assetfolders assetfolders', 'assetfolders.id = assetfiles.folderId');
+
+		if (!empty($criteria->source))
+		{
+			$query->join('assetsources assetsources', 'assetfiles.sourceId = assetsources.id');
+		}
 
 		if ($criteria->sourceId)
 		{
 			$query->andWhere(DbHelper::parseParam('assetfiles.sourceId', $criteria->sourceId, $query->params));
 		}
 
+		if ($criteria->source)
+		{
+			$query->andWhere(DbHelper::parseParam('assetsources.handle', $criteria->source, $query->params));
+		}
+
 		if ($criteria->folderId)
 		{
-			$query->andWhere(DbHelper::parseParam('assetfiles.folderId', $criteria->folderId, $query->params));
+			if ($criteria->includeSubfolders)
+			{
+				$folders = craft()->assets->getAllDescendantFolders(craft()->assets->getFolderById($criteria->folderId));
+				$query->andWhere(DbHelper::parseParam('assetfiles.folderId', array_keys($folders), $query->params));
+			}
+			else
+			{
+				$query->andWhere(DbHelper::parseParam('assetfiles.folderId', $criteria->folderId, $query->params));
+			}
 		}
 
 		if ($criteria->filename)
@@ -254,10 +431,35 @@ class AssetElementType extends BaseElementType
 		{
 			$query->andWhere(DbHelper::parseParam('assetfiles.size', $criteria->size, $query->params));
 		}
+
+		// Clear out existing onPopulateElements handlers
+		$criteria->detachEventHandler('onPopulateElements', array($this, 'eagerLoadTransforms'));
+
+		// Are we eager-loading any transforms?
+		if ($criteria->withTransforms)
+		{
+			$criteria->attachEventHandler('onPopulateElements', array($this, 'eagerLoadTransforms'));
+		}
 	}
 
 	/**
-	 * Populates an element model based on a query result.
+	 * Eager-loads image transforms requested by an element criteria model.
+	 *
+	 * @param Event $event
+	 *
+	 * @return void
+	 */
+	public function eagerLoadTransforms(Event $event)
+	{
+		/** @var ElementCriteriaModel $criteria */
+		$criteria = $event->sender;
+		$transforms = ArrayHelper::stringToArray($criteria->withTransforms);
+
+		craft()->assetTransforms->eagerLoadTransforms($event->params['elements'], $transforms);
+	}
+
+	/**
+	 * @inheritDoc IElementType::populateElementModel()
 	 *
 	 * @param array $row
 	 *
@@ -269,7 +471,7 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns the HTML for an editor HUD for the given element.
+	 * @inheritDoc IElementType::getEditorHtml()
 	 *
 	 * @param BaseElementModel $element
 	 *
@@ -285,13 +487,15 @@ class AssetElementType extends BaseElementType
 				'value'     => $element->filename,
 				'errors'    => $element->getErrors('filename'),
 				'first'     => true,
-				'required'  => true
+				'required'  => true,
+				'class'     => 'renameHelper'
 			)
 		));
 
 		$html .= craft()->templates->renderMacro('_includes/forms', 'textField', array(
 			array(
 				'label'     => Craft::t('Title'),
+				'locale'    => $element->locale,
 				'id'        => 'title',
 				'name'      => 'title',
 				'value'     => $element->title,
@@ -306,7 +510,7 @@ class AssetElementType extends BaseElementType
 	}
 
 	/**
-	 * Save the filename.
+	 * @inheritDoc IElementType::saveElement()
 	 *
 	 * @param BaseElementModel $element
 	 * @param array            $params
@@ -359,6 +563,40 @@ class AssetElementType extends BaseElementType
 		return $success;
 	}
 
+	// Protected Methods
+	// =========================================================================
+
+	/**
+	 * @inheritDoc BaseElementType::getTableAttributesForSource()
+	 *
+	 * @param string $sourceKey
+	 *
+	 * @return array
+	 */
+	protected function getTableAttributesForSource($sourceKey)
+	{
+		// Make sure it's a folder
+		if (strncmp($sourceKey, 'folder:', 7) === 0)
+		{
+			$folder = craft()->assets->getFolderById(substr($sourceKey, 7));
+
+			// Is it a nested folder?
+			if ($folder && $folder->parentId)
+			{
+				// Get the root folder in that source
+				$rootFolder = craft()->assets->getRootFolderBySourceId($folder->sourceId);
+
+				if ($rootFolder)
+				{
+					// Use the root folder's source key
+					$sourceKey = 'folder:'.$rootFolder->id;
+				}
+			}
+		}
+
+		return parent::getTableAttributesForSource($sourceKey);
+	}
+
 	// Private Methods
 	// =========================================================================
 
@@ -396,7 +634,7 @@ class AssetElementType extends BaseElementType
 			'label'     => ($folder->parentId ? $folder->name : Craft::t($folder->name)),
 			'hasThumbs' => true,
 			'criteria'  => array('folderId' => $folder->id),
-			'data'      => array('upload' => is_null($folder->sourceId) ? true : (int) craft()->assets->canUserPerformAction($folder->id, 'uploadToAssetSource'))
+			'data'      => array('upload' => is_null($folder->sourceId) ? true : craft()->assets->canUserPerformAction($folder->id, 'uploadToAssetSource'))
 		);
 
 		if ($includeNestedFolders)

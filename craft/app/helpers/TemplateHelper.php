@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.helpers
  * @since     1.0
  */
@@ -28,7 +28,21 @@ class TemplateHelper
 		$currentPage = craft()->request->getPageNum();
 		$limit = $criteria->limit;
 		$total = $criteria->total() - $criteria->offset;
+
+		// If they specified limit as null or 0 (for whatever reason), just assume it's all going to be on one page.
+		if (!$limit)
+		{
+			$limit = $total;
+		}
+
 		$totalPages = ceil($total / $limit);
+
+		$paginateVariable = new PaginateVariable();
+
+		if ($totalPages == 0)
+		{
+			return array($paginateVariable, array());
+		}
 
 		if ($currentPage > $totalPages)
 		{
@@ -50,18 +64,18 @@ class TemplateHelper
 			$last = $total;
 		}
 
-		$paginateVariable = new PaginateVariable();
 		$paginateVariable->first = $offset + 1;
 		$paginateVariable->last = $last;
 		$paginateVariable->total = $total;
 		$paginateVariable->currentPage = $currentPage;
 		$paginateVariable->totalPages = $totalPages;
 
-		// Get the entities
+		// Copy the criteria, set the offset, and get the elements
+		$criteria = $criteria->copy();
 		$criteria->offset = $offset;
-		$entities = $criteria->find();
+		$elements = $criteria->find();
 
-		return array($paginateVariable, $entities);
+		return array($paginateVariable, $elements);
 	}
 
 	/**

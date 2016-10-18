@@ -11,8 +11,8 @@ craft()->requireEdition(Craft::Client);
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.controllers
  * @since     1.0
  */
@@ -20,6 +20,18 @@ class EmailMessagesController extends BaseController
 {
 	// Public Methods
 	// =========================================================================
+
+	/**
+	 * @inheritDoc BaseController::init()
+	 *
+	 * @throws HttpException
+	 * @return null
+	 */
+	public function init()
+	{
+		// All email message actions require an admin
+		craft()->userSession->requireAdmin();
+	}
 
 	/**
 	 * Saves an email message.

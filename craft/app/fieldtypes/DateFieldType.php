@@ -6,18 +6,18 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.fieldtypes
  * @since     1.0
  */
-class DateFieldType extends BaseFieldType
+class DateFieldType extends BaseFieldType implements IPreviewableFieldType
 {
 	// Public Methods
 	// =========================================================================
 
 	/**
-	 * Returns the type of field this is.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class DateFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the content attribute config.
+	 * @inheritDoc IFieldType::defineContentAttribute()
 	 *
 	 * @return mixed
 	 */
@@ -37,7 +37,7 @@ class DateFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the field's settings HTML.
+	 * @inheritDoc ISavableComponentType::getSettingsHtml()
 	 *
 	 * @return string|null
 	 */
@@ -46,20 +46,21 @@ class DateFieldType extends BaseFieldType
 		// If they are both selected or nothing is selected, the select showBoth.
 		if (($this->getSettings()->showDate && $this->getSettings()->showTime))
 		{
-			$value = 'showBoth';
+			$dateTimeValue = 'showBoth';
 		}
 		else if ($this->getSettings()->showDate)
 		{
-			$value = 'showDate';
+			$dateTimeValue = 'showDate';
 		}
 		else if ($this->getSettings()->showTime)
 		{
-			$value = 'showTime';
+			$dateTimeValue = 'showTime';
 		}
 
-		return craft()->templates->renderMacro('_includes/forms.html', 'radioGroupField', array(array(
-			'id' => 'dateTime',
-			'name' => 'dateTime',
+		$options = array(15, 30, 60);
+		$options = array_combine($options, $options);
+
+		return craft()->templates->render('_components/fieldtypes/Date/settings', array(
 			'options' => array(
 				array(
 					'label' => Craft::t('Show date'),
@@ -74,12 +75,14 @@ class DateFieldType extends BaseFieldType
 					'value' => 'showBoth',
 				)
 			),
-			'value' => $value,
-		)));
+			'value' => $dateTimeValue,
+			'incrementOptions' => $options,
+			'settings' => $this->getSettings(),
+		));
 	}
 
 	/**
-	 * Returns the field's input HTML.
+	 * @inheritDoc IFieldType::getInputHtml()
 	 *
 	 * @param string $name
 	 * @param mixed  $value
@@ -89,53 +92,73 @@ class DateFieldType extends BaseFieldType
 	public function getInputHtml($name, $value)
 	{
 		$variables = array(
-			'id'       => craft()->templates->formatInputId($name),
-			'name'     => $name,
-			'value'    => $value
+			'id'              => craft()->templates->formatInputId($name),
+			'name'            => $name,
+			'value'           => $value,
+			'minuteIncrement' => $this->getSettings()->minuteIncrement
 		);
 
 		$input = '';
 
-		// In case nothing is selected, default to the date.
-		if (!$this->getSettings()->showDate && !$this->getSettings()->showTime)
+		$showTime = $this->getSettings()->showTime;
+		$showDate = (!$showTime || $this->getSettings()->showDate);
+
+		if ($showDate && $showTime)
 		{
-			$this->getSettings()->showDate = true;
+			$input .= '<div class="datetimewrapper">';
 		}
 
-		if ($this->getSettings()->showDate)
+		if ($showDate)
 		{
 			$input .= craft()->templates->render('_includes/forms/date', $variables);
 		}
 
-		if ($this->getSettings()->showTime)
+		if ($showTime)
 		{
 			$input .= ' '.craft()->templates->render('_includes/forms/time', $variables);
+		}
+
+		if ($showDate && $showTime)
+		{
+			$input .= '</div>';
 		}
 
 		return $input;
 	}
 
 	/**
-	 * Preps the field value for use.
+	 * @inheritDoc IFieldType::prepValueFromPost()
 	 *
 	 * @param mixed $value
 	 *
-	 * @return DateTime
+	 * @return mixed
 	 */
-	public function prepValue($value)
+	public function prepValueFromPost($value)
+	{
+		return DateTime::createFromString($value, craft()->getTimeZone());
+	}
+
+	/**
+	 * @inheritDoc IPreviewableFieldType::getTableAttributeHtml()
+	 *
+	 * @param mixed $value
+	 *
+	 * @return string
+	 */
+	public function getTableAttributeHtml($value)
 	{
 		if ($value)
 		{
-			// Set it to the system timezone
-			$timezone = craft()->getTimeZone();
-			$value->setTimezone(new \DateTimeZone($timezone));
-
-			return $value;
+			return '<span title="'.$value->localeDate().' '.$value->localeTime().'">'.$value->uiTimestamp().'</span>';
+		}
+		else
+		{
+			return '';
 		}
 	}
 
 	/**
-	 * Modifies an element query that's filtering by this field.
+	 * @inheritDoc IFieldType::modifyElementsQuery()
 	 *
 	 * @param DbCommand $query
 	 * @param mixed     $value
@@ -152,6 +175,8 @@ class DateFieldType extends BaseFieldType
 	}
 
 	/**
+	 * @inheritDoc ISavableComponentType::prepSettings()
+	 *
 	 * @param array $settings
 	 *
 	 * @return array
@@ -196,15 +221,16 @@ class DateFieldType extends BaseFieldType
 	// =========================================================================
 
 	/**
-	 * Defines the settings.
+	 * @inheritDoc BaseSavableComponentType::defineSettings()
 	 *
 	 * @return array
 	 */
 	protected function defineSettings()
 	{
 		return array(
-			'showDate' => array(AttributeType::Bool, 'default' => true),
-			'showTime' => AttributeType::Bool,
+			'showDate'        => array(AttributeType::Bool, 'default' => true),
+			'showTime'        => AttributeType::Bool,
+			'minuteIncrement' => array(AttributeType::Number, 'default' => 30, 'min' => 1, 'max' => 60),
 		);
 	}
 }

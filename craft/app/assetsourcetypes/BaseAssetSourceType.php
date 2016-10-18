@@ -6,11 +6,11 @@ namespace Craft;
  *
  * @author     Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright  Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license    http://buildwithcraft.com/license Craft License Agreement
- * @see        http://buildwithcraft.com
+ * @license    http://craftcms.com/license Craft License Agreement
+ * @see        http://craftcms.com
  * @package    craft.app.assetsourcetypes
  * @since      1.0
- * @deprecated This class will likely be modified.
+ * @deprecated This class will be removed in Craft 3.0.
  */
 abstract class BaseAssetSourceType extends BaseSavableComponentType
 {
@@ -25,7 +25,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	protected $isSourceLocal = false;
 
 	/**
-	 * The type of component this is.
+	 * The type of component, e.g. "Plugin", "Widget", "FieldType", etc. Defined by the component type's base class.
 	 *
 	 * @var string
 	 */
@@ -54,7 +54,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	abstract public function processIndex($sessionId, $offset);
 
 	/**
-	 * Get the image source path with the optional handle name.
+	 * Get the image source path.
 	 *
 	 * @param AssetFileModel $fileModel The assetFileModel for the image source path.
 	 *
@@ -63,25 +63,15 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	abstract public function getImageSourcePath(AssetFileModel $fileModel);
 
 	/**
-	 * Get the timestamp of when a file transform was last modified.
+	 * Put an image transform for the File and Transform Index using the provided path to the source image.
 	 *
-	 * @param AssetFileModel $fileModel         The assetFileModel for the timestamp of the last time the transform was modified.
-	 * @param string         $transformLocation The location of the transform.
-	 *
-	 * @return mixed
-	 */
-	abstract public function getTimeTransformModified(AssetFileModel $fileModel, $transformLocation);
-
-	/**
-	 * Put an image transform for the File and handle using the provided path to the source image.
-	 *
-	 * @param AssetFileModel $fileModel   The assetFileModel to put the image transform in.
-	 * @param string         $handle      The handle of the transform.
-	 * @param string         $sourceImage The source image.
+	 * @param AssetFileModel           $file        The AssetFileModel that the transform belongs to
+	 * @param AssetTransformIndexModel $index       The Transform Index data.
+	 * @param string                   $sourceImage The source image.
 	 *
 	 * @return mixed
 	 */
-	abstract public function putImageTransform(AssetFileModel $fileModel, $handle, $sourceImage);
+	abstract public function putImageTransform(AssetFileModel $file, AssetTransformIndexModel $index, $sourceImage);
 
 	/**
 	 * Make a local copy of the file and return the path to it.
@@ -93,25 +83,24 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	abstract public function getLocalCopy(AssetFileModel $file);
 
 	/**
-	 * Copy a transform for a file from source location to target location.
+	 * Return true if a physical file exists.
 	 *
-	 * @param AssetFileModel $file   The assetFileModel that has the transform to copy.
-	 * @param string         $source The source location of the transform.
-	 * @param string         $target The destination target of the transform.
+	 * @param string $parentPath  Parent path
+	 * @param string $filename    The name of the file.
 	 *
-	 * @return mixed
+	 * @return boolean
 	 */
-	abstract public function copyTransform(AssetFileModel $file, $source, $target);
+	abstract public function fileExists($parentPath, $filename);
 
 	/**
-	 * Return true if a transform exists at the location for a file.
+	 * Return true if a physical folder exists.
 	 *
-	 * @param AssetFileModel $file     The assetFileModel to check if a transform exists.
-	 * @param string         $location The location of the transform.
+	 * @param string $parentPath  Parent path
+	 * @param string $folderName  The name of the folder to check if it exists.
 	 *
-	 * @return mixed
+	 * @return boolean
 	 */
-	abstract public function transformExists(AssetFileModel $file, $location);
+	abstract public function folderExists($parentPath, $folderName);
 
 	/**
 	 * Return the source's base URL.
@@ -128,6 +117,23 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	public function getSourceErrors()
 	{
 		return array();
+	}
+
+	/**
+	 * Return whether the source has URLs.
+	 *
+	 * @return bool
+	 */
+	public function getHasUrls()
+	{
+		$settings = $this->getSettings();
+
+		if (!empty($settings->publicURLs))
+		{
+			return $settings->publicURLs;
+		}
+
+		return false;
 	}
 
 	/**
@@ -157,13 +163,16 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 			throw new Exception(Craft::t('Uploaded file was empty'));
 		}
 
-		$fileName = IOHelper::cleanFilename($file['name']);
+		$fileName = AssetsHelper::cleanAssetName($file['name']);
 
 		// Save the file to a temp location and pass this on to the source type implementation
 		$filePath = AssetsHelper::getTempFilePath(IOHelper::getExtension($fileName));
 		move_uploaded_file($file['tmp_name'], $filePath);
 
 		$response = $this->insertFileByPath($filePath, $folder, $fileName);
+
+		// Make sure the file is removed.
+		IOHelper::deleteFile($filePath, true);
 
 		// Prevent sensitive information leak. Just in case.
 		$response->deleteDataItem('filePath');
@@ -176,71 +185,117 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	 *
 	 * @param string           $localFilePath    The local file path of the file to insert.
 	 * @param AssetFolderModel $folder           The assetFolderModel where the file should be uploaded to.
-	 * @param string           $fileName         The name of the file to insert.
+	 * @param string           $filename         The name of the file to insert.
 	 * @param bool             $preventConflicts If set to true, will ensure that a conflict is not encountered by
 	 *                                           checking the file name prior insertion.
 	 *
 	 * @return AssetOperationResponseModel
 	 */
-	public function insertFileByPath($localFilePath, AssetFolderModel $folder, $fileName, $preventConflicts = false)
+	public function insertFileByPath($localFilePath, AssetFolderModel $folder, $filename, $preventConflicts = false)
 	{
-		// We hate Javascript and PHP in our image files.
-		if (IOHelper::getFileKind(IOHelper::getExtension($localFilePath)) == 'image' && ImageHelper::isImageManipulatable(IOHelper::getExtension($localFilePath)))
-		{
-			craft()->images->cleanImage($localFilePath);
-		}
+		// Fire an 'onBeforeUploadAsset' event
+		$event = new Event($this, array(
+			'path'     => $localFilePath,
+			'folder'   => $folder,
+			'filename' => $filename
+		));
 
-		if ($preventConflicts)
+		craft()->assets->onBeforeUploadAsset($event);
+
+		if ($event->performAction)
 		{
-			$newFileName = $this->getNameReplacement($folder, $fileName);
-			$response = $this->insertFileInFolder($folder, $localFilePath, $newFileName);
+			// We hate Javascript and PHP in our image files.
+			if (IOHelper::getFileKind(IOHelper::getExtension($localFilePath)) == 'image'
+				&& ImageHelper::isImageManipulatable(IOHelper::getExtension($localFilePath))
+				&& IOHelper::getExtension($localFilePath) != 'svg' // Not an image in the classic sense here.
+			)
+			{
+				craft()->images->cleanImage($localFilePath);
+			}
+
+			$mobileUpload = false;
+
+			if (IOHelper::getFileName($filename, false) == "image" && craft()->request->isMobileBrowser(true))
+			{
+				$mobileUpload = true;
+				$date = DateTimeHelper::currentUTCDateTime();
+				$filename = "image_".$date->format('Ymd_His').".".IOHelper::getExtension($filename);
+			}
+
+			if ($preventConflicts)
+			{
+				$newFileName = $this->getNameReplacementInFolder($folder, $filename);
+				$response = $this->insertFileInFolder($folder, $localFilePath, $newFileName);
+			}
+			else
+			{
+				$response = $this->insertFileInFolder($folder, $localFilePath, $filename);
+
+				// Naming conflict. create a new file and ask the user what to do with it
+				if ($response->isConflict())
+				{
+					$newFileName = $this->getNameReplacementInFolder($folder, $filename);
+					$conflictResponse = $response;
+					$response = $this->insertFileInFolder($folder, $localFilePath, $newFileName);
+				}
+			}
+
+			if ($response->isSuccess())
+			{
+
+				$fileModel = new AssetFileModel();
+
+				$title = $fileModel->generateAttributeLabel(IOHelper::getFileName($filename, false));
+
+				// If there were double spaces, it's because the filename had a space followed by a
+				// capital letter. We convert the space to a dash, but Yii thinks it's a new "word"
+				// and adds another space.
+				$fileModel->getContent()->title = str_replace('  ', ' ', $title);
+
+				$filename = IOHelper::getFileName($response->getDataItem('filePath'));
+				$fileModel->filename = IOHelper::getFileName($filename);
+
+				$fileModel->sourceId = $this->model->id;
+				$fileModel->folderId = $folder->id;
+				$fileModel->kind = IOHelper::getFileKind(IOHelper::getExtension($filename));
+				$fileModel->size = filesize($localFilePath);
+				$fileModel->dateModified = IOHelper::getLastTimeModified($localFilePath);
+
+				if ($fileModel->kind == 'image')
+				{
+					list ($width, $height) = ImageHelper::getImageSize($localFilePath);
+
+					$fileModel->width = $width;
+					$fileModel->height = $height;
+				}
+
+				if ($mobileUpload)
+				{
+					$fileModel->getContent()->title = Craft::t('Mobile Upload');
+				}
+
+				craft()->assets->storeFile($fileModel);
+
+				if (!$this->isSourceLocal() && $fileModel->kind == 'image')
+				{
+					$targetPath = craft()->path->getAssetsImageSourcePath().$fileModel->id.'.'.IOHelper::getExtension($fileModel->filename);
+					craft()->assetTransforms->storeLocalSource($localFilePath, $targetPath);
+					craft()->assetTransforms->queueSourceForDeletingIfNecessary($targetPath);
+				}
+
+				// Check if we stored a conflict response originally - send that back then.
+				if (isset($conflictResponse))
+				{
+					$response = $conflictResponse;
+				}
+
+				$response->setDataItem('fileId', $fileModel->id);
+			}
 		}
 		else
 		{
-			$response = $this->insertFileInFolder($folder, $localFilePath, $fileName);
-
-			// Naming conflict. create a new file and ask the user what to do with it
-			if ($response->isConflict())
-			{
-				$newFileName = $this->getNameReplacement($folder, $fileName);
-				$conflictResponse = $response;
-				$response = $this->insertFileInFolder($folder, $localFilePath, $newFileName);
-			}
-		}
-
-		if ($response->isSuccess())
-		{
-			$filename = IOHelper::getFileName($response->getDataItem('filePath'));
-
-			$fileModel = new AssetFileModel();
-			$fileModel->sourceId = $this->model->id;
-			$fileModel->folderId = $folder->id;
-			$fileModel->filename = IOHelper::getFileName($filename);
-			$fileModel->kind = IOHelper::getFileKind(IOHelper::getExtension($filename));
-			$fileModel->size = filesize($localFilePath);
-			$fileModel->dateModified = IOHelper::getLastTimeModified($localFilePath);
-
-			if ($fileModel->kind == 'image')
-			{
-				list ($width, $height) = getimagesize($localFilePath);
-				$fileModel->width = $width;
-				$fileModel->height = $height;
-			}
-
-			craft()->assets->storeFile($fileModel);
-
-			if (!$this->isSourceLocal() && $fileModel->kind == 'image')
-			{
-				craft()->assetTransforms->storeLocalSource($localFilePath, craft()->path->getAssetsImageSourcePath().$fileModel->id.'.'.IOHelper::getExtension($fileModel->filename));
-			}
-
-			// Check if we stored a conflict response originally - send that back then.
-			if (isset($conflictResponse))
-			{
-				$response = $conflictResponse;
-			}
-
-			$response->setDataItem('fileId', $fileModel->id);
+			$response = new AssetOperationResponseModel();
+			$response->setError(Craft::t('The file upload was cancelled.'));
 		}
 
 		return $response;
@@ -260,7 +315,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	 */
 	public function transferFileIntoSource($localCopy, AssetFolderModel $folder, AssetFileModel $file, $conflictResolution)
 	{
-		$filename = IOHelper::cleanFilename($file->filename);
+		$filename = AssetsHelper::cleanAssetName($file->filename);
 
 		if (!empty($conflictResolution))
 		{
@@ -269,20 +324,22 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 				case AssetConflictResolution::Replace:
 				{
 					$fileToReplace = craft()->assets->findFile(array('folderId' => $folder->id, 'filename' => $filename));
+
 					if ($fileToReplace)
 					{
 						$this->mergeFile($file, $fileToReplace);
 					}
 					else
 					{
-						$this->deleteSourceFile($folder, $filename);
+						$this->deleteSourceFile($folder->path.$filename);
 					}
+
 					break;
 				}
 
 				case AssetConflictResolution::KeepBoth:
 				{
-					$filename = $this->getNameReplacement($folder, $filename);
+					$filename = $this->getNameReplacementInFolder($folder, $filename);
 					break;
 				}
 			}
@@ -297,7 +354,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 			$file->sourceId = $folder->sourceId;
 			craft()->assets->storeFile($file);
 
-			if (!$this->isSourceLocal() && $file->kind == "image")
+			if (!$this->isSourceLocal() && $file->kind == 'image')
 			{
 				// Store copy locally for all sorts of operations.
 				craft()->assetTransforms->storeLocalSource($localCopy, craft()->path->getAssetsImageSourcePath().$file->id.'.'.IOHelper::getExtension($file->filename));
@@ -341,23 +398,25 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 				case AssetConflictResolution::Replace:
 				{
 					$fileToReplace = craft()->assets->findFile(array('folderId' => $targetFolder->id, 'filename' => $filename));
+
 					if ($fileToReplace)
 					{
 						$this->mergeFile($file, $fileToReplace);
-						$this->purgeCachedSourceFile($targetFolder, $filename);
+						$this->purgeCachedSourceFile($targetFolder->path.$filename);
 						$mergeFiles = true;
 					}
 					else
 					{
-						$this->deleteSourceFile($targetFolder, $filename);
-						$this->purgeCachedSourceFile($targetFolder, $filename);
+						$this->deleteSourceFile($targetFolder->path.$filename);
+						$this->purgeCachedSourceFile($targetFolder->path.$filename);
 					}
+
 					break;
 				}
 
 				case AssetConflictResolution::KeepBoth:
 				{
-					$filename = $this->getNameReplacement($targetFolder, $filename);
+					$filename = $this->getNameReplacementInFolder($targetFolder, $filename);
 					break;
 				}
 			}
@@ -390,38 +449,62 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	/**
 	 * Replace physical file.
 	 *
-	 * @param AssetFileModel $oldFile     The assetFileModel representing the original file.
-	 * @param AssetFileModel $replaceWith The assetFileModel representing the new file.
+	 * @param AssetFileModel $oldFile        The assetFileModel representing the original file.
+	 * @param AssetFileModel $replaceWith    The assetFileModel representing the new file.
+	 * @param string         $filenameToUse  The filename to use for the replaced file. If left
+	 *                                       empty, will use the name of the new file.
 	 *
 	 * @return null
 	 */
-	public function replaceFile(AssetFileModel $oldFile, AssetFileModel $replaceWith)
+	public function replaceFile(AssetFileModel $oldFile, AssetFileModel $replaceWith, $filenameToUse = "")
 	{
 		if ($oldFile->kind == 'image')
 		{
-			$this->deleteGeneratedThumbnails($oldFile);
-			$this->deleteSourceFile($oldFile->getFolder(), $oldFile->filename);
-			$this->purgeCachedSourceFile($oldFile->getFolder(), $oldFile->filename);
+			craft()->assetTransforms->deleteAllTransformData($oldFile);
+			$this->deleteSourceFile($oldFile->getPath());
+			$this->purgeCachedSourceFile($oldFile->getPath());
 
 			// For remote sources, fetch the source image and move it in the old ones place
 			if (!$this->isSourceLocal())
 			{
-				$localCopy = $this->getLocalCopy($replaceWith);
-				if ($oldFile->kind == "image")
+				if ($replaceWith->kind == 'image')
 				{
+					$localCopy = $replaceWith->getTransformSource();
 					IOHelper::copyFile($localCopy, craft()->path->getAssetsImageSourcePath().$oldFile->id.'.'.IOHelper::getExtension($oldFile->filename));
 				}
-				IOHelper::deleteFile($localCopy);
 			}
 		}
 
-		$this->moveSourceFile($replaceWith, craft()->assets->getFolderById($oldFile->folderId), $oldFile->filename, true);
+		$newFileName = !empty($filenameToUse) ? $filenameToUse : $oldFile->filename;
+		$folder = craft()->assets->getFolderById($oldFile->folderId);
+
+		$filenameChanges = StringHelper::toLowerCase($newFileName) != StringHelper::toLowerCase($replaceWith->filename);
+
+		// If the filename does not change, this can trigger errors in some source types.
+		if ($filenameChanges)
+		{
+			$this->moveSourceFile($replaceWith, $folder, $newFileName, true);
+		}
 
 		// Update file info
-		$oldFile->width = $replaceWith->width;
-		$oldFile->height = $replaceWith->height;
-		$oldFile->size = $replaceWith->size;
+		$oldFile->width        = $replaceWith->width;
+		$oldFile->height       = $replaceWith->height;
+		$oldFile->size         = $replaceWith->size;
+		$oldFile->kind         = $replaceWith->kind;
 		$oldFile->dateModified = $replaceWith->dateModified;
+		$oldFile->filename     = $newFileName;
+
+		if (empty($filenameToUse))
+		{
+			$replaceWith->filename = $this->getNameReplacementInFolder($folder, $replaceWith->filename);
+			craft()->assets->storeFile($replaceWith);
+		}
+		else
+		{
+			// If the file name has not changed, we're reusing the source file,
+			// so we have to prevent deletion of source file here.
+			craft()->assets->deleteFiles($replaceWith->id, $filenameChanges);
+		}
 
 		craft()->assets->storeFile($oldFile);
 	}
@@ -435,14 +518,15 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	 */
 	public function deleteFile(AssetFileModel $file)
 	{
-		$this->deleteTransformData($file);
+		craft()->assetTransforms->deleteAllTransformData($file);
 
 		// Delete DB record and the file itself.
 		craft()->elements->deleteElementById($file->id);
 
-		$this->deleteSourceFile($file->getFolder(), $file->filename);
+		$this->deleteSourceFile($file->getPath());
 
 		$response = new AssetOperationResponseModel();
+
 		return $response->setSuccess();
 	}
 
@@ -456,29 +540,54 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	 */
 	public function mergeFile(AssetFileModel $sourceFile, AssetFileModel $targetFile)
 	{
-		$this->deleteTransformData($targetFile);
+		craft()->assetTransforms->deleteAllTransformData($targetFile);
 
 		// Delete DB record and the file itself.
 		craft()->elements->mergeElementsByIds($targetFile->id, $sourceFile->id);
 
-		$this->deleteSourceFile($targetFile->getFolder(), $targetFile->filename);
+		$this->deleteSourceFile($targetFile->getPath());
 
 		$response = new AssetOperationResponseModel();
+
 		return $response->setSuccess();
 	}
 
 	/**
-	 * Finalize an outgoing transfer for a file.
+	 * Delete a generated transform for a file.
 	 *
-	 * @param AssetFileModel $file The assetFileModel representing the file that will have any created images deleted.
+	 * @param AssetFileModel $file
+	 * @param AssetTransformIndexModel $index
 	 *
 	 * @return null
 	 */
-	public function deleteCreatedImages(AssetFileModel $file)
+	public function deleteTransform(AssetFileModel $file, AssetTransformIndexModel $index)
 	{
-		$this->deleteGeneratedImageTransforms($file);
-		$this->deleteGeneratedThumbnails($file);
+		$this->deleteSourceFile($file->folderPath.craft()->assetTransforms->getTransformSubpath($file, $index));
 	}
+
+	/**
+	 * Copy a transform for a file from source location to target location.
+	 *
+	 * @param AssetFileModel           $file             The assetFileModel that has the transform to copy.
+	 * @param string                   $targetFolderPath The target folder path.
+	 * @param AssetTransformIndexModel $source           The source transform index data.
+	 * @param AssetTransformIndexModel $target           The destination transform index data.
+	 *
+	 * @return mixed
+	 */
+	public function copyTransform(AssetFileModel $file, $targetFolderPath, AssetTransformIndexModel $source, AssetTransformIndexModel $target)
+	{
+		$sourceTransformPath = $file->folderPath.craft()->assetTransforms->getTransformSubpath($file, $source);
+		$targetTransformPath = $targetFolderPath.craft()->assetTransforms->getTransformSubpath($file, $target);
+
+		if ($sourceTransformPath == $targetTransformPath)
+		{
+			return true;
+		}
+
+		return $this->copySourceFile($sourceTransformPath, $targetTransformPath);
+	}
+
 
 	/**
 	 * Create a folder.
@@ -491,11 +600,11 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	 */
 	public function createFolder(AssetFolderModel $parentFolder, $folderName)
 	{
-		$folderName = IOHelper::cleanFilename($folderName);
+		$folderName = AssetsHelper::cleanAssetName($folderName, false);
 
 		// If folder exists in DB or physically, bail out
 		if (craft()->assets->findFolder(array('parentId' => $parentFolder->id, 'name' => $folderName))
-			|| $this->sourceFolderExists($parentFolder, $folderName))
+			|| $this->folderExists($parentFolder->path, $folderName))
 		{
 			throw new Exception(Craft::t('A folder already exists with that name!'));
 		}
@@ -514,10 +623,11 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 		$folderId = craft()->assets->storeFolder($newFolder);
 
 		$response = new AssetOperationResponseModel();
+
 		return $response->setSuccess()
 				->setDataItem('folderId', $folderId)
-		        ->setDataItem('parentId', $parentFolder->id)
-		        ->setDataItem('folderName', $folderName);
+				->setDataItem('parentId', $parentFolder->id)
+				->setDataItem('folderName', $folderName);
 	}
 
 	/**
@@ -535,19 +645,19 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 
 		if (!$parentFolder)
 		{
-			throw new Exception(Craft::t("Cannot rename folder “{folder}”!", array('folder' => $folder->name)));
+			throw new Exception(Craft::t('Cannot rename folder “{folder}”!', array('folder' => $folder->name)));
 		}
 
 		// Allow this for changing the case
-		if (!(StringHelper::toLowerCase($newName) == StringHelper::toLowerCase($folder->name)) && $this->sourceFolderExists($parentFolder, $newName))
+		if (!(StringHelper::toLowerCase($newName) == StringHelper::toLowerCase($folder->name)) && $this->folderExists($parentFolder->path, $newName))
 		{
-			throw new Exception(Craft::t("Folder “{folder}” already exists there.", array('folder' => $newName)));
+			throw new Exception(Craft::t('Folder “{folder}” already exists there.', array('folder' => $newName)));
 		}
 
 		// Try to rename the folder in the source
 		if (!$this->renameSourceFolder($folder, $newName))
 		{
-			throw new Exception(Craft::t("Cannot rename folder “{folder}”!", array('folder' => $folder->name)));
+			throw new Exception(Craft::t('Cannot rename folder “{folder}”!', array('folder' => $folder->name)));
 		}
 
 		$oldFullPath = $folder->path;
@@ -555,6 +665,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 
 		// Find all folders with affected fullPaths and update them.
 		$folders = craft()->assets->getAllDescendantFolders($folder);
+
 		foreach ($folders as $folderModel)
 		{
 			$folderModel->path = preg_replace('#^'.$oldFullPath.'#', $newFullPath, $folderModel->path);
@@ -568,6 +679,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 
 		// All set, Scotty!
 		$response = new AssetOperationResponseModel();
+
 		return $response->setSuccess()->setDataItem('newName', $newName);
 	}
 
@@ -583,17 +695,20 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	public function moveFolder(AssetFolderModel $folder, AssetFolderModel $newParentFolder, $overwriteTarget = false)
 	{
 		$response = new AssetOperationResponseModel();
+
 		if ($folder->id == $newParentFolder->id)
 		{
 			return $response->setSuccess();
 		}
 
 		$removeFromTree = '';
-		if ($this->sourceFolderExists($newParentFolder, $folder->name))
+
+		if ($this->folderExists($newParentFolder->path, $folder->name))
 		{
 			if ($overwriteTarget)
 			{
 				$existingFolder = craft()->assets->findFolder(array('parentId' => $newParentFolder->id, 'name' => $folder->name));
+
 				if ($existingFolder)
 				{
 					$removeFromTree = $existingFolder->id;
@@ -622,6 +737,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 		$files = $criteria->find();
 
 		$transferList = array();
+
 		foreach ($files as $file)
 		{
 			$transferList[] = array(
@@ -655,6 +771,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 
 		// Delete children folders
 		$childFolders = craft()->assets->findFolders(array('parentId' => $folder->id));
+
 		foreach ($childFolders as $childFolder)
 		{
 			$this->deleteFolder($childFolder);
@@ -666,6 +783,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 		craft()->assets->deleteFolderRecord($folder->id);
 
 		$response = new AssetOperationResponseModel();
+
 		return $response->setSuccess();
 	}
 
@@ -684,11 +802,11 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	 *
 	 * @param AssetFileModel $file The assetFileModel representing the file we're finalizing the transfer for.
 	 *
-	 * @return mixed
+	 * @return null
 	 */
 	public function finalizeTransfer(AssetFileModel $file)
 	{
-		$this->deleteSourceFile($file->getFolder(), $file->filename);
+		$this->deleteSourceFile($file->getPath());
 	}
 
 	/**
@@ -741,15 +859,14 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	 *
 	 * @return mixed
 	 */
-	abstract protected function getNameReplacement(AssetFolderModel $folder, $fileName);
+	abstract protected function getNameReplacementInFolder(AssetFolderModel $folder, $fileName);
 
 	/**
 	 * Delete just the file inside of a source for an Assets File.
 	 *
-	 * @param AssetFolderModel $folder   The assetFolderModel that contains the file to be deleted.
-	 * @param string           $filename The name of the file to be deleted.
+	 * @param string $subpath The subpath of the file to delete within the source
 	 */
-	abstract protected function deleteSourceFile(AssetFolderModel $folder, $filename);
+	abstract protected function deleteSourceFile($subpath);
 
 	/**
 	 * Move a file in source.
@@ -764,23 +881,14 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	abstract protected function moveSourceFile(AssetFileModel $file, AssetFolderModel $targetFolder, $fileName = '', $overwrite = false);
 
 	/**
-	 * Delete generated image transforms for a File.
+	 * Copy a physical file inside the source.
 	 *
-	 * @param AssetFileModel $file The assetFileModel that has the images to delete the transforms for
-	 *
-	 * @return mixed
-	 */
-	abstract protected function deleteGeneratedImageTransforms(AssetFileModel $file);
-
-	/**
-	 * Return true if a physical folder exists.
-	 *
-	 * @param AssetFolderModel $parentFolder The assetFolderModel that has the folder to check if it exists.
-	 * @param string           $folderName   The name of the folder to check if it exists.
+	 * @param string $sourceUri source subpath
+	 * @param string $targetUri target subpath
 	 *
 	 * @return bool
 	 */
-	abstract protected function sourceFolderExists(AssetFolderModel $parentFolder, $folderName);
+	abstract protected function copySourceFile($sourceUri, $targetUri);
 
 	/**
 	 * Creates a physical folder, returns true on success.
@@ -895,6 +1003,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 
 			// Look up the parent folder
 			$parentFolder = craft()->assets->findFolder($parameters);
+
 			if (is_null($parentFolder))
 			{
 				$parentId = ':empty:';
@@ -1017,33 +1126,15 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	{
 		$thumbFolders = IOHelper::getFolderContents(craft()->path->getAssetsThumbsPath());
 
-		foreach ($thumbFolders as $folder)
+		if ($thumbFolders)
 		{
-			if (is_dir($folder))
+			foreach ($thumbFolders as $folder)
 			{
-				IOHelper::deleteFile($folder.'/'.$file->id.'.'.IOHelper::getExtension($file->filename));
+				if (is_dir($folder))
+				{
+					IOHelper::deleteFile($folder.'/'.$file->id.'.'.IOHelper::getExtension($file->filename));
+				}
 			}
-		}
-	}
-
-	/**
-	 * Delete transform-related data for file.
-	 *
-	 * @param AssetFileModel $file The assetFileModel that represents the file to delete any transformed data for.
-	 *
-	 * @return null
-	 */
-	protected function deleteTransformData(AssetFileModel $file)
-	{
-		// Delete all the created images, such as transforms, thumbnails
-		$this->deleteCreatedImages($file);
-		craft()->assetTransforms->deleteTransformRecordsByFileId($file->id);
-
-		$filePath = craft()->path->getAssetsImageSourcePath().$file->id.'.'.IOHelper::getExtension($file->filename);
-
-		if (IOHelper::fileExists($filePath))
-		{
-			IOHelper::deleteFile($filePath);
 		}
 	}
 
@@ -1051,13 +1142,11 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 	 * Purge a file from the Source's cache.  Sources that need this should
 	 * override this method.
 	 *
-	 * @param AssetFolderModel $folder   The assetFolderModel representing the f
-	 *                                   older that has the file to purge.
-	 * @param string           $filename The file to purge.
+	 * @param string           $filePath The file to purge.
 	 *
 	 * @return null
 	 */
-	protected function purgeCachedSourceFile(AssetFolderModel $folder, $filename)
+	protected function purgeCachedSourceFile($filePath)
 	{
 		return;
 	}
@@ -1120,7 +1209,7 @@ abstract class BaseAssetSourceType extends BaseSavableComponentType
 		}
 		else
 		{
-			throw new Exception(Craft::t("Failed to successfully mirror folder structure"));
+			throw new Exception(Craft::t('Failed to successfully mirror folder structure'));
 		}
 	}
 }

@@ -4,12 +4,13 @@ namespace Craft;
 /**
  * Class AssetSourcesService
  *
- * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
- * @package   craft.app.services
- * @since     1.0
+ * @author     Pixel & Tonic, Inc. <support@pixelandtonic.com>
+ * @copyright  Copyright (c) 2014, Pixel & Tonic, Inc.
+ * @license    http://craftcms.com/license Craft License Agreement
+ * @see        http://craftcms.com
+ * @package    craft.app.services
+ * @since      1.0
+ * @deprecated This class will have several breaking changes in Craft 3.0.
  */
 class AssetSourcesService extends BaseApplicationComponent
 {
@@ -29,7 +30,17 @@ class AssetSourcesService extends BaseApplicationComponent
 	/**
 	 * @var
 	 */
+	private $_publicSourceIds;
+
+	/**
+	 * @var
+	 */
 	private $_viewableSources;
+
+	/**
+	 * @var
+	 */
+	private $_publicSources;
 
 	/**
 	 * @var
@@ -153,6 +164,32 @@ class AssetSourcesService extends BaseApplicationComponent
 	}
 
 	/**
+	 * Returns all source IDs that have public URLs.
+	 *
+	 * @return array
+	 */
+	public function getPublicSourceIds()
+	{
+
+		if (!isset($this->_publicSourceIds)) {
+			$this->_publicSourceIds = array();
+
+			/**
+			 * @var AssetSourceModel $source
+			 */
+			foreach ($this->getAllSources() as $source) {
+				$settings = $source->settings;
+
+				if (!empty($settings['publicURLs'])) {
+					$this->_publicSourceIds[] = $source->id;
+				}
+			}
+		}
+
+		return $this->_publicSourceIds;
+	}
+
+	/**
 	 * Returns all sources that are viewable by the current user.
 	 *
 	 * @param string|null $indexBy
@@ -183,6 +220,49 @@ class AssetSourcesService extends BaseApplicationComponent
 			$sources = array();
 
 			foreach ($this->_viewableSources as $source)
+			{
+				$sources[$source->$indexBy] = $source;
+			}
+
+			return $sources;
+		}
+	}
+
+	/**
+	 * Returns all sources that have public URLs.
+	 *
+	 * @return array
+	 */
+	public function getPublicSources($indexBy = null)
+	{
+
+		if (!isset($this->_publicSources))
+		{
+			$this->_publicSources = array();
+
+			/**
+			 * @var AssetSourceModel $source
+			 */
+			foreach ($this->getAllSources() as $source)
+			{
+				$settings = $source->settings;
+
+				if (!empty($settings['publicURLs'])) {
+					$this->_publicSources[] = $source;
+				}
+
+			}
+		}
+
+		if (!$indexBy)
+		{
+			return $this->_publicSources;
+		}
+		else
+		{
+			$sources = array();
+
+			foreach ($this->_publicSources as $source)
 			{
 				$sources[$source->$indexBy] = $source;
 			}
@@ -272,7 +352,7 @@ class AssetSourcesService extends BaseApplicationComponent
 			$source->id = $sourceId;
 			$source->name = TempAssetSourceType::sourceName;
 			$source->type = TempAssetSourceType::sourceType;
-			$source->settings = array('path' => craft()->path->getAssetsTempSourcePath(), 'url' => UrlHelper::getResourceUrl('tempassets').'/');
+			$source->settings = array('path' => craft()->path->getAssetsTempSourcePath(), 'url' => rtrim(UrlHelper::getResourceUrl(), '/').'/tempassets/');
 			return $source;
 		}
 		else
@@ -325,8 +405,9 @@ class AssetSourcesService extends BaseApplicationComponent
 			$oldSource = AssetSourceModel::populateModel($sourceRecord);
 		}
 
-		$sourceRecord->name = $source->name;
-		$sourceRecord->type = $source->type;
+		$sourceRecord->name          = $source->name;
+		$sourceRecord->handle        = $source->handle;
+		$sourceRecord->type          = $source->type;
 		$sourceRecord->fieldLayoutId = $source->fieldLayoutId;
 
 		$sourceType = $this->populateSourceType($source);
@@ -338,6 +419,16 @@ class AssetSourcesService extends BaseApplicationComponent
 		$settingsValidate = $sourceType->getSettings()->validate();
 		$sourceErrors = $sourceType->getSourceErrors();
 
+		if ($processedSettings['publicURLs'])
+		{
+			$urlKey = $source->type == 'Local' ? 'url' : 'urlPrefix';
+
+			if (!$processedSettings[$urlKey])
+			{
+				$settingsValidate = false;
+				$source->addSettingErrors(array($urlKey => Craft::t('URL can be left blank only for private Asset sources.')));
+			}
+		}
 
 		if ($recordValidates && $settingsValidate && empty($sourceErrors))
 		{
@@ -355,19 +446,24 @@ class AssetSourcesService extends BaseApplicationComponent
 					$sourceRecord->sortOrder = $maxSortOrder + 1;
 				}
 
-				if (!$isNewSource && $oldSource->fieldLayoutId)
-				{
-					// Drop the old field layout
-					craft()->fields->deleteLayoutById($oldSource->fieldLayoutId);
-				}
-
-				// Save the new one
+				// Is there a new field layout?
 				$fieldLayout = $source->getFieldLayout();
-				craft()->fields->saveLayout($fieldLayout, false);
 
-				// Update the source record/model with the new layout ID
-				$source->fieldLayoutId = $fieldLayout->id;
-				$sourceRecord->fieldLayoutId = $fieldLayout->id;
+				if (!$fieldLayout->id)
+				{
+					// Delete the old one
+					if (!$isNewSource && $oldSource->fieldLayoutId)
+					{
+						craft()->fields->deleteLayoutById($oldSource->fieldLayoutId);
+					}
+
+					// Save the new one
+					craft()->fields->saveLayout($fieldLayout);
+
+					// Update the asset source record/model with the new layout ID
+					$source->fieldLayoutId = $fieldLayout->id;
+					$sourceRecord->fieldLayoutId = $fieldLayout->id;
+				}
 
 				// Save the source
 				$sourceRecord->save(false);
@@ -404,6 +500,19 @@ class AssetSourcesService extends BaseApplicationComponent
 				}
 
 				throw $e;
+			}
+
+			if ($isNewSource && $this->_fetchedAllSources)
+			{
+				$this->_sourcesById[$source->id] = $source;
+			}
+
+			if (isset($this->_viewableSourceIds))
+			{
+				if (craft()->userSession->checkPermission('viewAssetSource:'.$source->id))
+				{
+					$this->_viewableSourceIds[] = $source->id;
+				}
 			}
 
 			return true;
@@ -516,7 +625,7 @@ class AssetSourcesService extends BaseApplicationComponent
 	private function _createSourceQuery()
 	{
 		return craft()->db->createCommand()
-			->select('id, fieldLayoutId, name, type, settings, sortOrder')
+			->select('id, fieldLayoutId, name, handle, type, settings, sortOrder')
 			->from('assetsources')
 			->order('sortOrder');
 	}
@@ -554,7 +663,7 @@ class AssetSourcesService extends BaseApplicationComponent
 
 			if (!$sourceRecord)
 			{
-				throw new Exception(Craft::t('No source exists with the ID “{id}”', array('id' => $sourceId)));
+				throw new Exception(Craft::t('No source exists with the ID “{id}”.', array('id' => $sourceId)));
 			}
 		}
 		else

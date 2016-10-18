@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.behaviors
  * @since     1.2
  */
@@ -50,6 +50,17 @@ class AppBehavior extends BaseBehavior
 	 * @var bool
 	 */
 	private $_isDbConnectionValid = false;
+
+	/**
+	 * @var
+	 */
+	private $_language;
+
+	/**
+	 * @var bool
+	 */
+	private $_gettingLanguage = false;
+
 
 	// Public Methods
 	// =========================================================================
@@ -173,7 +184,7 @@ class AppBehavior extends BaseBehavior
 	 */
 	public function getEdition()
 	{
-		return $this->getInfo('edition');
+		return (int) $this->getInfo('edition');
 	}
 
 	/**
@@ -197,7 +208,7 @@ class AppBehavior extends BaseBehavior
 
 		if ($licensedEdition !== false)
 		{
-			return $licensedEdition;
+			return (int) $licensedEdition;
 		}
 	}
 
@@ -238,7 +249,15 @@ class AppBehavior extends BaseBehavior
 	{
 		$info = $this->getInfo();
 		$info->edition = $edition;
-		return $this->saveInfo($info);
+
+		$result = $this->saveInfo($info);
+
+		// Fire an 'onEditionChange' event
+		$this->getOwner()->onEditionChange(new Event($this, array(
+			'edition' => $edition
+		)));
+
+		return $result;
 	}
 
 	/**
@@ -274,15 +293,14 @@ class AppBehavior extends BaseBehavior
 		// Only admins can upgrade Craft
 		if (craft()->userSession->isAdmin())
 		{
-			// If they're running on a testable domain, go for it
-			if ($this->canTestEditions())
-			{
-				return true;
-			}
-
-			// Base this off of what they're actually licensed to use, not what's currently running
+			// Are they either *using* or *licensed to use* something < Craft Pro?
+			$activeEdition = $this->getEdition();
 			$licensedEdition = $this->getLicensedEdition();
-			return ($licensedEdition !== null && $licensedEdition < Craft::Pro);
+
+			return (
+				($activeEdition < Craft::Pro) ||
+				($licensedEdition !== null && $licensedEdition < Craft::Pro)
+			);
 		}
 		else
 		{
@@ -309,8 +327,18 @@ class AppBehavior extends BaseBehavior
 	{
 		if (!isset($this->_siteName))
 		{
-			$siteName = $this->getInfo('siteName');
-			$this->_siteName = craft()->config->parseEnvironmentString($siteName);
+			// Start by checking the config
+			$siteName = craft()->config->getLocalized('siteName');
+
+			if (!$siteName)
+			{
+				$siteName = $this->getInfo('siteName');
+
+				// Parse it for environment variables
+				$siteName = craft()->config->parseEnvironmentString($siteName);
+			}
+
+			$this->_siteName = $siteName;
 		}
 
 		return $this->_siteName;
@@ -370,6 +398,23 @@ class AppBehavior extends BaseBehavior
 	public function setSiteUrl($siteUrl)
 	{
 		$this->_siteUrl = rtrim($siteUrl, '/').'/';
+	}
+
+	/**
+	 * Returns the system timezone.
+	 *
+	 * @return string
+	 */
+	public function getTimezone()
+	{
+		$timezone = craft()->config->get('timezone');
+
+		if ($timezone)
+		{
+			return $timezone;
+		}
+
+		return $this->getInfo('timezone');
 	}
 
 	/**
@@ -451,6 +496,9 @@ class AppBehavior extends BaseBehavior
 					throw new Exception(Craft::t('Craft appears to be installed but the info table is empty.'));
 				}
 
+				// Prevent an infinite loop in createFromString.
+				$row['releaseDate'] = DateTime::createFromString($row['releaseDate'], null, false);
+
 				$this->_info = new InfoModel($row);
 			}
 			else
@@ -503,6 +551,56 @@ class AppBehavior extends BaseBehavior
 		{
 			return false;
 		}
+	}
+
+	/**
+	 * Returns the target application language.
+	 *
+	 * @return string
+	 */
+	public function getLanguage()
+	{
+		if (!isset($this->_language))
+		{
+			// Defend against an infinite getLanguage() loop
+			if (!$this->_gettingLanguage)
+			{
+				$this->_gettingLanguage = true;
+				$useUserLanguage = craft()->request->isCpRequest();
+				$targetLanguage = $this->getTargetLanguage($useUserLanguage);
+				$this->setLanguage($targetLanguage);
+			}
+			else
+			{
+				if (craft()->getComponent('request', false) && !craft()->isConsole())
+				{
+					// We tried to get the language, but something went wrong. Use fallback to prevent infinite loop.
+					$fallbackLanguage = $this->_getFallbackLanguage();
+					$this->setLanguage($fallbackLanguage);
+					$this->_gettingLanguage = false;
+				}
+				else
+				{
+					// Seriously?
+					$this->setLanguage('en_us');
+					$this->_gettingLanguage = false;
+				}
+			}
+		}
+
+		return $this->_language;
+	}
+
+	/**
+	 * Sets the target application language.
+	 *
+	 * @param string $language
+	 *
+	 * @return null
+	 */
+	public function setLanguage($language)
+	{
+		$this->_language = $language;
 	}
 
 	/**
@@ -613,6 +711,168 @@ class AppBehavior extends BaseBehavior
 		return $this->getEdition() == Craft::Pro;
 	}
 
+	/**
+	 * Returns the target app language.
+	 *
+	 * @param bool Whether the user's preferred language should be used
+	 * @return string|null
+	 */
+	public function getTargetLanguage($useUserLanguage = true)
+	{
+		if ($this->isInstalled())
+		{
+			// Will any locale validation be necessary here?
+			if ($useUserLanguage || defined('CRAFT_LOCALE'))
+			{
+				if ($useUserLanguage)
+				{
+					$locale = 'auto';
+				}
+				else
+				{
+					$locale = StringHelper::toLowerCase(CRAFT_LOCALE);
+				}
+
+				// Get the list of actual site locale IDs
+				$siteLocaleIds = craft()->i18n->getSiteLocaleIds();
+
+				// Is it set to "auto"?
+				if ($locale == 'auto')
+				{
+					// Prevents a PHP notice in case the session failed to start, for whatever reason.
+					if (craft()->getComponent('userSession', false))
+					{
+						// Place this within a try/catch in case userSession is being fussy.
+						try
+						{
+							// If the user is logged in *and* has a primary language set, use that
+							$user = craft()->userSession->getUser();
+
+							if ($user && $user->preferredLocale)
+							{
+								return $user->preferredLocale;
+							}
+						} catch (\Exception $e)
+						{
+							Craft::log("Tried to determine the user's preferred locale, but got this exception: ".$e->getMessage(), LogLevel::Error);
+						}
+					}
+
+					// Is there a default CP language?
+					if ($defaultCpLanguage = craft()->config->get('defaultCpLanguage'))
+					{
+						// Make sure it's one of the site locales
+						$defaultCpLanguage = StringHelper::toLowerCase($defaultCpLanguage);
+
+						if (in_array($defaultCpLanguage, $siteLocaleIds))
+						{
+							return $defaultCpLanguage;
+						}
+					}
+
+					// Otherwise check if the browser's preferred language matches any of the site locales
+					$browserLanguages = craft()->request->getBrowserLanguages();
+
+					if ($browserLanguages)
+					{
+						foreach ($browserLanguages as $language)
+						{
+							if (in_array($language, $siteLocaleIds))
+							{
+								return $language;
+							}
+						}
+					}
+				}
+
+				// Is it set to a valid site locale?
+				else if (in_array($locale, $siteLocaleIds))
+				{
+					return $locale;
+				}
+			}
+
+			// Use the primary site locale by default
+			return craft()->i18n->getPrimarySiteLocaleId();
+		}
+		else
+		{
+			return $this->_getFallbackLanguage();
+		}
+	}
+
+	/**
+	 * Creates a {@link DbConnection} specifically initialized for Craft's craft()->db instance.
+	 *
+	 * @throws DbConnectException
+	 * @return DbConnection
+	 */
+	public function createDbConnection()
+	{
+		try
+		{
+			$dbConnection = new DbConnection();
+
+			$dbConnection->connectionString = $this->_processConnectionString();
+			$dbConnection->emulatePrepare   = true;
+			$dbConnection->username         = craft()->config->get('user', ConfigFile::Db);
+			$dbConnection->password         = craft()->config->get('password', ConfigFile::Db);
+			$dbConnection->charset          = craft()->config->get('charset', ConfigFile::Db);
+			$dbConnection->tablePrefix      = $dbConnection->getNormalizedTablePrefix();
+			$dbConnection->driverMap        = array('mysql' => 'Craft\MysqlSchema');
+
+			// Support for Yii's $initSQLs
+			if ($initSQLs = craft()->config->get('initSQLs', ConfigFile::Db))
+			{
+				$dbConnection->initSQLs = $initSQLs;
+			}
+
+			// See if we have any extra PDO attributes passed in.
+			if ($attributes = craft()->config->get('attributes', ConfigFile::Db))
+			{
+				$dbConnection->attributes = $attributes;
+			}
+
+			$dbConnection->init();
+		}
+		// Most likely missing PDO in general or the specific database PDO driver.
+		catch(\CDbException $e)
+		{
+			Craft::log($e->getMessage(), LogLevel::Error);
+
+			// TODO: Multi-db driver check.
+			if (!extension_loaded('pdo'))
+			{
+				throw new DbConnectException(Craft::t('Craft requires the PDO extension to operate.'));
+			}
+			else if (!extension_loaded('pdo_mysql'))
+			{
+				throw new DbConnectException(Craft::t('Craft requires the PDO_MYSQL driver to operate.'));
+			}
+			else
+			{
+				Craft::log($e->getMessage(), LogLevel::Error);
+				throw new DbConnectException(Craft::t('Craft can’t connect to the database with the credentials in craft/config/db.php.'));
+			}
+		}
+		catch (\Exception $e)
+		{
+			Craft::log($e->getMessage(), LogLevel::Error);
+			throw new DbConnectException(Craft::t('Craft can’t connect to the database with the credentials in craft/config/db.php.'));
+		}
+
+		$this->setIsDbConnectionValid(true);
+
+		// Now that we've validated the config and connection, set extra db logging if devMode is enabled.
+		if (craft()->config->get('devMode'))
+		{
+			$dbConnection->enableProfiling = true;
+			$dbConnection->enableParamLogging = true;
+		}
+
+		return $dbConnection;
+	}
+
 	// Private Methods
 	// =========================================================================
 
@@ -627,6 +887,46 @@ class AppBehavior extends BaseBehavior
 	{
 		$info = $this->getInfo();
 		$info->maintenance = $value;
+
 		return $this->saveInfo($info);
+	}
+
+	/**
+	 * Returns the correct connection string depending on whether a unixSocket is specified or not in the db config.
+	 *
+	 * @return string
+	 */
+	private function _processConnectionString()
+	{
+		$unixSocket = craft()->config->get('unixSocket', ConfigFile::Db);
+
+		if (!empty($unixSocket))
+		{
+			return 'mysql:unix_socket='.$unixSocket.';dbname='.craft()->config->get('database', ConfigFile::Db).';';
+		}
+		else
+		{
+			return 'mysql:host='.craft()->config->get('server', ConfigFile::Db).';dbname='.craft()->config->get('database', ConfigFile::Db).';port='.craft()->config->get('port', ConfigFile::Db).';';
+		}
+	}
+
+	/**
+	 * Tries to find a language match with the user's browser's preferred language(s).
+	 * If not uses the app's sourceLanguage.
+	 *
+	 * @return string
+	 */
+	private function _getFallbackLanguage()
+	{
+		// See if we have the CP translated in one of the user's browsers preferred language(s)
+		$language = craft()->getTranslatedBrowserLanguage();
+
+		// Default to the source language.
+		if (!$language)
+		{
+			$language = craft()->sourceLanguage;
+		}
+
+		return $language;
 	}
 }

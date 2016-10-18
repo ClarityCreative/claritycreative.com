@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -25,9 +25,9 @@ class FieldLayoutFieldModel extends BaseModel
 	// =========================================================================
 
 	/**
-	 * Returns the field's layout.
+	 * Returns the field’s layout.
 	 *
-	 * @return FieldLayoutModel|null
+	 * @return FieldLayoutModel|null The field’s layout.
 	 */
 	public function getLayout()
 	{
@@ -50,9 +50,9 @@ class FieldLayoutFieldModel extends BaseModel
 	}
 
 	/**
-	 * Sets the field's layout.
+	 * Sets the field’s layout.
 	 *
-	 * @param FieldLayoutModel $layout
+	 * @param FieldLayoutModel $layout The field’s layout.
 	 *
 	 * @return null
 	 */
@@ -62,9 +62,9 @@ class FieldLayoutFieldModel extends BaseModel
 	}
 
 	/**
-	 * Returns the actual field model.
+	 * Returns the associated field.
 	 *
-	 * @return FieldModel|null
+	 * @return FieldModel|null The associated field.
 	 */
 	public function getField()
 	{
@@ -78,6 +78,8 @@ class FieldLayoutFieldModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

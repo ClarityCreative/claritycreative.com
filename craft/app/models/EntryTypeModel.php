@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.2
  */
@@ -37,7 +37,7 @@ class EntryTypeModel extends BaseModel
 	}
 
 	/**
-	 * Returns the entry type's CP edit URL.
+	 * @inheritDoc BaseElementModel::getCpEditUrl()
 	 *
 	 * @return string
 	 */
@@ -46,10 +46,25 @@ class EntryTypeModel extends BaseModel
 		return UrlHelper::getCpUrl('settings/sections/'.$this->sectionId.'/entrytypes/'.$this->id);
 	}
 
+	/**
+	 * Returns the entry type’s section.
+	 *
+	 * @return SectionModel|null
+	 */
+	public function getSection()
+	{
+		if ($this->sectionId)
+		{
+			return craft()->sections->getSectionById($this->sectionId);
+		}
+	}
+
 	// Protected Methods
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

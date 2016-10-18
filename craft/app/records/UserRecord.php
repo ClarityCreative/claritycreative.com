@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.records
  * @since     1.0
  */
@@ -17,6 +17,8 @@ class UserRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::getTableName()
+	 *
 	 * @return string
 	 */
 	public function getTableName()
@@ -25,6 +27,8 @@ class UserRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineRelations()
+	 *
 	 * @return array
 	 */
 	public function defineRelations()
@@ -45,6 +49,8 @@ class UserRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineIndexes()
+	 *
 	 * @return array
 	 */
 	public function defineIndexes()
@@ -58,6 +64,8 @@ class UserRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::validate()
+	 *
 	 * @param null $attributes
 	 * @param bool $clearErrors
 	 *
@@ -74,25 +82,40 @@ class UserRecord extends BaseRecord
 		return parent::validate($attributes, false);
 	}
 
+	/**
+	 * Sets a user's status to active.
+	 */
+	public function setActive()
+	{
+		$this->pending = false;
+		$this->archived = false;
+	}
+
 	// Protected Methods
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
 	{
 		return array(
 			'username'                   => array(AttributeType::String, 'maxLength' => 100, 'required' => true),
-			'photo'                      => array(AttributeType::String, 'maxLength' => 50),
+			'photo'                      => array(AttributeType::String, 'maxLength' => 100),
 			'firstName'                  => array(AttributeType::String, 'maxLength' => 100),
 			'lastName'                   => array(AttributeType::String, 'maxLength' => 100),
 			'email'                      => array(AttributeType::Email, 'required' => true),
 			'password'                   => array(AttributeType::String, 'maxLength' => 255, 'column' => ColumnType::Char),
 			'preferredLocale'            => array(AttributeType::Locale),
+			'weekStartDay'               => array(AttributeType::Number, 'min' => 0, 'max' => 6, 'required' => true, 'default' => '0'),
 			'admin'                      => array(AttributeType::Bool),
 			'client'                     => array(AttributeType::Bool),
-			'status'                     => array(AttributeType::Enum, 'values' => array(UserStatus::Active, UserStatus::Locked, UserStatus::Suspended, UserStatus::Pending, UserStatus::Archived), 'default' => UserStatus::Pending),
+			'locked'                     => array(AttributeType::Bool),
+			'suspended'                  => array(AttributeType::Bool),
+			'pending'                    => array(AttributeType::Bool),
+			'archived'                   => array(AttributeType::Bool),
 			'lastLoginDate'              => array(AttributeType::DateTime),
 			'lastLoginAttemptIPAddress'  => array(AttributeType::String, 'maxLength' => 45),
 			'invalidLoginWindowStart'    => array(AttributeType::DateTime),

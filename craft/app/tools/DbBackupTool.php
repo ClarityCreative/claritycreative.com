@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.tools
  * @since     1.0
  */
@@ -17,7 +17,7 @@ class DbBackupTool extends BaseTool
 	// =========================================================================
 
 	/**
-	 * Returns the tool name.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class DbBackupTool extends BaseTool
 	}
 
 	/**
-	 * Returns the tool's icon value.
+	 * @inheritDoc ITool::getIconValue()
 	 *
 	 * @return string
 	 */
@@ -37,7 +37,7 @@ class DbBackupTool extends BaseTool
 	}
 
 	/**
-	 * Returns the tool's options HTML.
+	 * @inheritDoc ITool::getOptionsHtml()
 	 *
 	 * @return string
 	 */
@@ -51,7 +51,7 @@ class DbBackupTool extends BaseTool
 	}
 
 	/**
-	 * Performs the tool's action.
+	 * @inheritDoc ITool::performAction()
 	 *
 	 * @param array $params
 	 *
@@ -59,6 +59,8 @@ class DbBackupTool extends BaseTool
 	 */
 	public function performAction($params = array())
 	{
+		// In addition to the default tables we want to ignore data in, we also don't care about data in the session
+		// table in this tools' case.
 		$file = craft()->db->backup();
 
 		if (IOHelper::fileExists($file) && isset($params['downloadBackup']) && (bool)$params['downloadBackup'])

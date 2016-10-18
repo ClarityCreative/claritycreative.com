@@ -9,8 +9,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.controllers
  * @since     1.0
  */
@@ -20,7 +20,7 @@ class SectionsController extends BaseController
 	// =========================================================================
 
 	/**
-	 * Initializes the controller.  This method is called by the Craft before the controller starts to execute.
+	 * @inheritDoc BaseController::init()
 	 *
 	 * @throws HttpException
 	 * @return null
@@ -41,19 +41,7 @@ class SectionsController extends BaseController
 	public function actionIndex(array $variables = array())
 	{
 		$variables['sections'] = craft()->sections->getAllSections();
-
-		// Can new sections be added?
-		if (craft()->getEdition() == Craft::Personal)
-		{
-			$variables['maxSections'] = 0;
-
-			foreach (craft()->sections->typeLimits as $limit)
-			{
-				$variables['maxSections'] += $limit;
-			}
-		}
-
-		$this->renderTemplate('settings/sections/index', $variables);
+		$this->renderTemplate('settings/sections/_index', $variables);
 	}
 
 	/**
@@ -101,13 +89,7 @@ class SectionsController extends BaseController
 
 		foreach ($types as $type)
 		{
-			$allowed = (($variables['section']->id && $variables['section']->type == $type) || craft()->sections->canHaveMore($type));
-			$variables['canBe'.ucfirst($type)] = $allowed;
-
-			if ($allowed)
-			{
-				$variables['typeOptions'][$type] = Craft::t(ucfirst($type));
-			}
+			$variables['typeOptions'][$type] = Craft::t(ucfirst($type));
 		}
 
 		if (!$variables['typeOptions'])
@@ -117,19 +99,12 @@ class SectionsController extends BaseController
 
 		if (!$variables['section']->type)
 		{
-			if ($variables['canBeChannel'])
-			{
-				$variables['section']->type = SectionType::Channel;
-			}
-			else
-			{
-				$variables['section']->type = SectionType::Single;
-			}
+			$variables['section']->type = SectionType::Channel;
 		}
 
-		$variables['canBeHomepage']  = (
+		$variables['canBeHomepage'] = (
 			($variables['section']->id && $variables['section']->isHomepage()) ||
-			($variables['canBeSingle'] && !craft()->sections->doesHomepageExist())
+			!craft()->sections->doesHomepageExist()
 		);
 
 		$variables['crumbs'] = array(
@@ -168,7 +143,7 @@ class SectionsController extends BaseController
 
 		if (craft()->isLocalized())
 		{
-			$localeIds = craft()->request->getPost('locales');
+			$localeIds = craft()->request->getPost('locales', array());
 		}
 		else
 		{
@@ -200,8 +175,6 @@ class SectionsController extends BaseController
 		}
 
 		$section->setLocales($locales);
-
-		$section->hasUrls    = (bool) craft()->request->getPost('types.'.$section->type.'.hasUrls', true);
 
 		// Save it
 		if (craft()->sections->saveSection($section))
@@ -270,10 +243,10 @@ class SectionsController extends BaseController
 		$variables['crumbs'] = array(
 			array('label' => Craft::t('Settings'), 'url' => UrlHelper::getUrl('settings')),
 			array('label' => Craft::t('Sections'), 'url' => UrlHelper::getUrl('settings/sections')),
-			array('label' => $variables['section']->name, 'url' => UrlHelper::getUrl('settings/sections/'.$variables['section']->id)),
+			array('label' => Craft::t($variables['section']->name), 'url' => UrlHelper::getUrl('settings/sections/'.$variables['section']->id)),
 		);
 
-		$variables['title'] = Craft::t('{section} Entry Types', array('section' => $variables['section']->name));
+		$variables['title'] = Craft::t('{section} Entry Types', array('section' => Craft::t($variables['section']->name)));
 
 		$this->renderTemplate('settings/sections/_entrytypes/index', $variables);
 	}
@@ -322,7 +295,7 @@ class SectionsController extends BaseController
 				$variables['entryType']->sectionId = $variables['section']->id;
 			}
 
-			$variables['title'] = Craft::t('Create a new {section} entry type', array('section' => $variables['section']->name));
+			$variables['title'] = Craft::t('Create a new {section} entry type', array('section' => Craft::t($variables['section']->name)));
 		}
 
 		$variables['crumbs'] = array(
@@ -338,22 +311,38 @@ class SectionsController extends BaseController
 	/**
 	 * Saves an entry type.
 	 *
+	 * @throws Exception
+	 * @throws HttpException
+	 * @throws \Exception
 	 * @return null
 	 */
 	public function actionSaveEntryType()
 	{
 		$this->requirePostRequest();
 
-		$entryType = new EntryTypeModel();
+		$entryTypeId = craft()->request->getPost('entryTypeId');
+
+		if ($entryTypeId)
+		{
+			$entryType = craft()->sections->getEntryTypeById($entryTypeId);
+
+			if (!$entryType)
+			{
+				throw new Exception(Craft::t('No entry type exists with the ID “{id}”.', array('id' => $entryTypeId)));
+			}
+		}
+		else
+		{
+			$entryType = new EntryTypeModel();
+		}
 
 		// Set the simple stuff
-		$entryType->id            = craft()->request->getPost('entryTypeId');
-		$entryType->sectionId     = craft()->request->getRequiredPost('sectionId');
-		$entryType->name          = craft()->request->getPost('name');
-		$entryType->handle        = craft()->request->getPost('handle');
-		$entryType->hasTitleField = (bool) craft()->request->getPost('hasTitleField', true);
-		$entryType->titleLabel    = craft()->request->getPost('titleLabel');
-		$entryType->titleFormat   = craft()->request->getPost('titleFormat');
+		$entryType->sectionId     = craft()->request->getRequiredPost('sectionId', $entryType->sectionId);
+		$entryType->name          = craft()->request->getPost('name', $entryType->name);
+		$entryType->handle        = craft()->request->getPost('handle', $entryType->handle);
+		$entryType->hasTitleField = (bool) craft()->request->getPost('hasTitleField', $entryType->hasTitleField);
+		$entryType->titleLabel    = craft()->request->getPost('titleLabel', $entryType->titleLabel);
+		$entryType->titleFormat   = craft()->request->getPost('titleFormat', $entryType->titleFormat);
 
 		// Set the field layout
 		$fieldLayout = craft()->fields->assembleLayoutFromPost();

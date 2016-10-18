@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.records
  * @since     1.0
  */
@@ -17,6 +17,8 @@ class EntryRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::getTableName()
+	 *
 	 * @return string
 	 */
 	public function getTableName()
@@ -25,26 +27,24 @@ class EntryRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineRelations()
+	 *
 	 * @return array
 	 */
 	public function defineRelations()
 	{
-		$relations = array(
-			'element' => array(static::BELONGS_TO, 'ElementRecord', 'id', 'required' => true, 'onDelete' => static::CASCADE),
-			'section' => array(static::BELONGS_TO, 'SectionRecord', 'required' => true, 'onDelete' => static::CASCADE),
-			'type'    => array(static::BELONGS_TO, 'EntryTypeRecord', 'onDelete' => static::CASCADE),
-			'author'  => array(static::BELONGS_TO, 'UserRecord', 'onDelete' => static::CASCADE),
+		return array(
+			'element'  => array(static::BELONGS_TO, 'ElementRecord', 'id', 'required' => true, 'onDelete' => static::CASCADE),
+			'section'  => array(static::BELONGS_TO, 'SectionRecord', 'required' => true, 'onDelete' => static::CASCADE),
+			'type'     => array(static::BELONGS_TO, 'EntryTypeRecord', 'onDelete' => static::CASCADE),
+			'author'   => array(static::BELONGS_TO, 'UserRecord', 'onDelete' => static::CASCADE),
+			'versions' => array(static::HAS_MANY, 'EntryVersionRecord', 'elementId'),
 		);
-
-		if (craft()->getEdition() == Craft::Pro)
-		{
-			$relations['versions'] = array(static::HAS_MANY, 'EntryVersionRecord', 'elementId');
-		}
-
-		return $relations;
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::defineIndexes()
+	 *
 	 * @return array
 	 */
 	public function defineIndexes()
@@ -58,6 +58,8 @@ class EntryRecord extends BaseRecord
 	}
 
 	/**
+	 * @inheritDoc BaseRecord::scopes()
+	 *
 	 * @return array
 	 */
 	public function scopes()
@@ -71,6 +73,8 @@ class EntryRecord extends BaseRecord
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseRecord::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

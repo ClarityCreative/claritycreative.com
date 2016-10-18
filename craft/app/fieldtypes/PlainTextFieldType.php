@@ -6,18 +6,18 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.fieldtypes
  * @since     1.0
  */
-class PlainTextFieldType extends BaseFieldType
+class PlainTextFieldType extends BaseFieldType implements IPreviewableFieldType
 {
 	// Public Methods
 	// =========================================================================
 
 	/**
-	 * Returns the type of field this is.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class PlainTextFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the field's settings HTML.
+	 * @inheritDoc ISavableComponentType::getSettingsHtml()
 	 *
 	 * @return string|null
 	 */
@@ -39,7 +39,7 @@ class PlainTextFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the content attribute config.
+	 * @inheritDoc IFieldType::defineContentAttribute()
 	 *
 	 * @return mixed
 	 */
@@ -51,29 +51,16 @@ class PlainTextFieldType extends BaseFieldType
 		{
 			$columnType = ColumnType::Text;
 		}
-		// TODO: MySQL specific
-		else if ($maxLength <= 255)
-		{
-			$columnType = ColumnType::Varchar;
-		}
-		else if ($maxLength <= 65535)
-		{
-			$columnType = ColumnType::Text;
-		}
-		else if ($maxLength <= 16777215)
-		{
-			$columnType = ColumnType::MediumText;
-		}
 		else
 		{
-			$columnType = ColumnType::LongText;
+			$columnType = DbHelper::getTextualColumnTypeByContentLength($maxLength);
 		}
 
 		return array(AttributeType::String, 'column' => $columnType, 'maxLength' => $maxLength);
 	}
 
 	/**
-	 * Returns the field's input HTML.
+	 * @inheritDoc IFieldType::getInputHtml()
 	 *
 	 * @param string $name
 	 * @param mixed  $value
@@ -93,7 +80,7 @@ class PlainTextFieldType extends BaseFieldType
 	// =========================================================================
 
 	/**
-	 * Defines the settings.
+	 * @inheritDoc BaseSavableComponentType::defineSettings()
 	 *
 	 * @return array
 	 */

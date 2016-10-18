@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -17,9 +17,9 @@ class EmailSettingsModel extends BaseModel
 	// =========================================================================
 
 	/**
-	 * Declares the validation rules.
+	 * @inheritDoc BaseModel::rules()
 	 *
-	 * @return array The array of validation rules.
+	 * @return array
 	 */
 	public function rules()
 	{
@@ -65,6 +65,8 @@ class EmailSettingsModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
@@ -82,6 +84,7 @@ class EmailSettingsModel extends BaseModel
 			'emailAddress'            => AttributeType::Email,
 			'senderName'              => AttributeType::String,
 			'testEmailAddress'        => AttributeType::Email,
+			'template'                => AttributeType::String,
 		);
 	}
 }

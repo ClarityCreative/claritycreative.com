@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -40,7 +40,7 @@ class AssetSourceModel extends BaseComponentModel
 	public function behaviors()
 	{
 		return array(
-			'fieldLayout' => new FieldLayoutBehavior(ElementType::Entry),
+			'fieldLayout' => new FieldLayoutBehavior(ElementType::Asset),
 		);
 	}
 
@@ -73,16 +73,19 @@ class AssetSourceModel extends BaseComponentModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
 	{
 		$attributes = parent::defineAttributes();
 
-		$attributes['name'] = AttributeType::String;
+		$attributes['name']            = AttributeType::String;
+		$attributes['handle']          = AttributeType::Handle;
 		$attributes['type']['default'] = 'Local';
-		$attributes['sortOrder'] = AttributeType::String;
-		$attributes['fieldLayoutId'] = AttributeType::Number;
+		$attributes['sortOrder']       = AttributeType::String;
+		$attributes['fieldLayoutId']   = AttributeType::Number;
 
 		return $attributes;
 	}

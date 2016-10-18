@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.helpers
  * @since     1.0
  */
@@ -118,7 +118,25 @@ class ArrayHelper
 		}
 		else if (is_string($str))
 		{
-			return array_merge(array_filter(array_map('trim', preg_split('/(?<!\\\),/', $str))));
+			// Split it on the non-escaped commas
+			$arr = preg_split('/(?<!\\\),/', $str);
+
+			// Remove any of the backslashes used to escape the commas
+			foreach ($arr as $key => $val)
+			{
+				// Remove leading/trailing whitespace
+				$val = trim($val);
+
+				// Remove any backslashes used to escape commas
+				$val = str_replace('\,', ',', $val);
+
+				$arr[$key] = $val;
+			}
+
+			// Remove any empty elements and reset the keys
+			$arr = array_merge(array_filter($arr));
+
+			return $arr;
 		}
 		else
 		{
@@ -159,25 +177,43 @@ class ArrayHelper
 	}
 
 	/**
+	 * Returns the first key in a given array.
+	 *
+	 * @param array $arr
+	 *
+	 * @return string|integer|null The first key, whether that is a number (if the array is numerically indexed) or a string, or null if $arr isn’t an array, or is empty.
+	 */
+	public static function getFirstKey($arr)
+	{
+		if (is_array($arr))
+		{
+			foreach ($arr as $key => $value)
+			{
+				return $key;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Returns the first value in a given array.
 	 *
 	 * @param array $arr
 	 *
 	 * @return mixed|null
 	 */
-	public function getFirstValue($arr)
+	public static function getFirstValue($arr)
 	{
-		if (count($arr))
+		if (is_array($arr))
 		{
-			if (isset($arr[0]))
+			foreach ($arr as $value)
 			{
-				return $arr[0];
-			}
-			else
-			{
-				return $arr[array_shift(array_keys($arr))];
+				return $value;
 			}
 		}
+
+		return null;
 	}
 
 	// Private Methods
@@ -190,7 +226,7 @@ class ArrayHelper
 	 *
 	 * @return bool
 	 */
-	private function _isNotAnEmptyString($val)
+	private static function _isNotAnEmptyString($val)
 	{
 		return (mb_strlen($val) != 0);
 	}

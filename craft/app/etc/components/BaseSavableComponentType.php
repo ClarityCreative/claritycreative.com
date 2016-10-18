@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.components
  * @since     1.0
  */
@@ -32,7 +32,7 @@ abstract class BaseSavableComponentType extends BaseComponentType implements ISa
 	// =========================================================================
 
 	/**
-	 * Gets the settings.
+	 * @inheritDoc ISavableComponentType::getSettings()
 	 *
 	 * @return BaseModel
 	 */
@@ -47,7 +47,7 @@ abstract class BaseSavableComponentType extends BaseComponentType implements ISa
 	}
 
 	/**
-	 * Sets the setting values.
+	 * @inheritDoc ISavableComponentType::setSettings()
 	 *
 	 * @param array|BaseModel $values
 	 *
@@ -69,7 +69,7 @@ abstract class BaseSavableComponentType extends BaseComponentType implements ISa
 	}
 
 	/**
-	 * Returns the component's settings HTML.
+	 * @inheritDoc ISavableComponentType::getSettingsHtml()
 	 *
 	 * @return string|null
 	 */
@@ -79,7 +79,7 @@ abstract class BaseSavableComponentType extends BaseComponentType implements ISa
 	}
 
 	/**
-	 * Preps the settings before they're saved to the database.
+	 * @inheritDoc ISavableComponentType::prepSettings()
 	 *
 	 * @param array $settings
 	 *

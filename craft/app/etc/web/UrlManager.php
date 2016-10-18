@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.web
  * @since     1.0
  */
@@ -52,6 +52,16 @@ class UrlManager extends \CUrlManager
 	 * @var
 	 */
 	private $_matchedElementRoute;
+
+	/**
+	 * @var
+	 */
+	private $_regexTokens;
+
+	/**
+	 * @var
+	 */
+	private $_regexTokenPatterns;
 
 	// Public Methods
 	// =========================================================================
@@ -269,8 +279,15 @@ class UrlManager extends \CUrlManager
 
 				if ($element)
 				{
-					$elementType = craft()->elements->getElementType($element->getElementType());
-					$route = $elementType->routeRequestForMatchedElement($element);
+					// Do any plugins want a say in this?
+					$route = craft()->plugins->callFirst('getElementRoute', array($element), true);
+
+					if (!$route)
+					{
+						// Give the element type a chance
+						$elementType = craft()->elements->getElementType($element->getElementType());
+						$route = $elementType->routeRequestForMatchedElement($element);
+					}
 
 					if ($route)
 					{
@@ -363,11 +380,11 @@ class UrlManager extends \CUrlManager
 			// quotes and don't escape the backslashes.
 			$regexPattern = preg_replace("/(?<!\\\\)\\//", '\/', $pattern);
 
-			// Parse {handle} tokens
-			$regexPattern = str_replace('{handle}', '[a-zA-Z][a-zA-Z0-9_]*', $regexPattern);
+			// Parse tokens
+			$regexPattern = $this->_parseRegexTokens($regexPattern);
 
 			// Does it match?
-			if (preg_match('/^'.$regexPattern.'$/', $path, $match))
+			if (preg_match('/^'.$regexPattern.'$/u', $path, $match))
 			{
 				// Normalize the route
 				$route = $this->_normalizeRoute($route);
@@ -397,6 +414,40 @@ class UrlManager extends \CUrlManager
 	}
 
 	/**
+	 * Parses any tokens in a given regex pattern.
+	 *
+	 * @param string $pattern
+	 *
+	 * @return string
+	 */
+	private function _parseRegexTokens($pattern)
+	{
+		if (!isset($this->_regexTokens))
+		{
+			$this->_regexTokens = array(
+				'{handle}',
+				'{slug}',
+			);
+
+			$slugChars = array('.', '_', '-');
+			$slugWordSeparator = craft()->config->get('slugWordSeparator');
+
+			if ($slugWordSeparator != '/' && !in_array($slugWordSeparator, $slugChars))
+			{
+				$slugChars[] = $slugWordSeparator;
+			}
+
+			// Reference: http://www.regular-expressions.info/unicode.html
+			$this->_regexTokenPatterns = array(
+				'(?:[a-zA-Z][a-zA-Z0-9_]*)',
+				'(?:[\p{L}\p{N}\p{M}'.preg_quote(implode($slugChars), '/').']+)',
+			);
+		}
+
+		return str_replace($this->_regexTokens, $this->_regexTokenPatterns, $pattern);
+	}
+
+	/**
 	 * Returns whether the current path is "public" (no segments that start with the privateTemplateTrigger).
 	 *
 	 * @return bool
@@ -405,7 +456,7 @@ class UrlManager extends \CUrlManager
 	{
 		if (!craft()->request->isAjaxRequest())
 		{
-			$trigger = craft()->config->get('privateTemplateTrigger');
+			$trigger = craft()->request->isCpRequest() ? '_' : craft()->config->get('privateTemplateTrigger');
 			$length = strlen($trigger);
 
 			foreach (craft()->request->getSegments() as $requestPathSeg)

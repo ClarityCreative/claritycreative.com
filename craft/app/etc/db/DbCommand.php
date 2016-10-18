@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.db
  * @since     1.0
  */
@@ -79,11 +79,11 @@ class DbCommand extends \CDbCommand
 		{
 			if (preg_match('/^(.*?)(?i:\s+as\s+|\s+)(.*)$/', $column, $matches))
 			{
-				$column = craft()->db->quoteColumnName($matches[1]).' AS '.craft()->db->quoteColumnName($matches[2]);
+				$column = $this->getConnection()->quoteColumnName($matches[1]).' AS '.$this->getConnection()->quoteColumnName($matches[2]);
 			}
 			else
 			{
-				$column = craft()->db->quoteColumnName($column);
+				$column = $this->getConnection()->quoteColumnName($column);
 			}
 		}
 
@@ -100,11 +100,14 @@ class DbCommand extends \CDbCommand
 	public function addSelect($columns = '*')
 	{
 		$oldSelect = $this->getSelect();
+
 		if ($oldSelect)
 		{
 			$columns = str_replace('`', '', $oldSelect).','.$columns;
 		}
+
 		$this->setSelect($columns);
+
 		return $this;
 	}
 
@@ -115,7 +118,8 @@ class DbCommand extends \CDbCommand
 	 */
 	public function from($tables)
 	{
-		$tables = DbHelper::addTablePrefix($tables);
+		$tables = $this->getConnection()->addTablePrefix($tables);
+
 		return parent::from($tables);
 	}
 
@@ -133,6 +137,7 @@ class DbCommand extends \CDbCommand
 		}
 
 		$conditions = $this->_normalizeConditions($conditions, $params);
+
 		return parent::where($conditions, $params);
 	}
 
@@ -152,6 +157,7 @@ class DbCommand extends \CDbCommand
 		}
 
 		$conditions = $this->_normalizeConditions($conditions, $params);
+
 		return parent::andWhere($conditions, $params);
 	}
 
@@ -171,6 +177,7 @@ class DbCommand extends \CDbCommand
 		}
 
 		$conditions = $this->_normalizeConditions($conditions, $params);
+
 		return parent::orWhere($conditions, $params);
 	}
 
@@ -184,8 +191,9 @@ class DbCommand extends \CDbCommand
 	public function join($table, $conditions, $params = array())
 	{
 		$this->_addJoinedTable($table);
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$conditions = $this->_normalizeConditions($conditions, $params);
+
 		return parent::join($table, $conditions, $params);
 	}
 
@@ -199,8 +207,9 @@ class DbCommand extends \CDbCommand
 	public function leftJoin($table, $conditions, $params = array())
 	{
 		$this->_addJoinedTable($table);
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$conditions = $this->_normalizeConditions($conditions, $params);
+
 		return parent::leftJoin($table, $conditions, $params);
 	}
 
@@ -214,8 +223,9 @@ class DbCommand extends \CDbCommand
 	public function rightJoin($table, $conditions, $params = array())
 	{
 		$this->_addJoinedTable($table);
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$conditions = $this->_normalizeConditions($conditions, $params);
+
 		return parent::rightJoin($table, $conditions, $params);
 	}
 
@@ -227,7 +237,8 @@ class DbCommand extends \CDbCommand
 	public function crossJoin($table)
 	{
 		$this->_addJoinedTable($table);
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::crossJoin($table);
 	}
 
@@ -239,8 +250,35 @@ class DbCommand extends \CDbCommand
 	public function naturalJoin($table)
 	{
 		$this->_addJoinedTable($table);
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::naturalJoin($table);
+	}
+
+	/**
+	 * @param string $table
+	 *
+	 * @return DbCommand
+	 */
+	public function naturalLeftJoin($table)
+	{
+		$this->_addJoinedTable($table);
+		$table = $this->getConnection()->addTablePrefix($table);
+
+		return parent::naturalLeftJoin($table);
+	}
+
+	/**
+	 * @param string $table
+	 *
+	 * @return \CDbCommand
+	 */
+	public function naturalRightJoin($table)
+	{
+		$this->_addJoinedTable($table);
+		$table = $this->getConnection()->addTablePrefix($table);
+
+		return parent::naturalRightJoin($table);
 	}
 
 	/**
@@ -252,6 +290,7 @@ class DbCommand extends \CDbCommand
 	public function having($conditions, $params = array())
 	{
 		$conditions = $this->_normalizeConditions($conditions, $params);
+
 		return parent::having($conditions, $params);
 	}
 
@@ -263,6 +302,7 @@ class DbCommand extends \CDbCommand
 	public function addOrder($columns)
 	{
 		$oldOrder = $this->getOrder();
+
 		if ($oldOrder)
 		{
 			return $this->order(array($oldOrder, $columns));
@@ -282,7 +322,7 @@ class DbCommand extends \CDbCommand
 	 */
 	public function insert($table, $columns, $includeAuditColumns = true)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 
 		if ($includeAuditColumns)
 		{
@@ -309,7 +349,7 @@ class DbCommand extends \CDbCommand
 			return 0;
 		}
 
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 
 		if ($includeAuditColumns)
 		{
@@ -326,6 +366,7 @@ class DbCommand extends \CDbCommand
 		}
 
 		$queryParams = $this->getConnection()->getSchema()->insertAll($table, $columns, $rows);
+
 		return $this->setText($queryParams['query'])->execute($queryParams['params']);
 	}
 
@@ -351,8 +392,8 @@ class DbCommand extends \CDbCommand
 		$allColumns = array_merge($keyColumns, $updateColumns);
 		$params = array();
 
-		$table = DbHelper::addTablePrefix($table);
-		$sql = 'INSERT INTO '.craft()->db->quoteTableName($table).' (';
+		$table = $this->getConnection()->addTablePrefix($table);
+		$sql = 'INSERT INTO '.$this->getConnection()->quoteTableName($table).' (';
 
 		foreach (array_keys($allColumns) as $i => $column)
 		{
@@ -361,7 +402,7 @@ class DbCommand extends \CDbCommand
 				$sql .= ', ';
 			}
 
-			$sql .= craft()->db->quoteColumnName($column);
+			$sql .= $this->getConnection()->quoteColumnName($column);
 
 			$params[':'.$column] = $allColumns[$column];
 		}
@@ -376,7 +417,7 @@ class DbCommand extends \CDbCommand
 				$sql .= ', ';
 			}
 
-			$sql .= craft()->db->quoteColumnName($column).' = :'.$column;
+			$sql .= $this->getConnection()->quoteColumnName($column).' = :'.$column;
 		}
 
 		return $this->setText($sql)->execute($params);
@@ -393,7 +434,7 @@ class DbCommand extends \CDbCommand
 	 */
 	public function update($table, $columns, $conditions = '', $params = array(), $includeAuditColumns = true)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$conditions = $this->_normalizeConditions($conditions, $params);
 
 		if ($includeAuditColumns)
@@ -414,8 +455,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function replace($table, $column, $find, $replace)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$queryParams = $this->getConnection()->getSchema()->replace($table, $column, $find, $replace);
+
 		return $this->setText($queryParams['query'])->execute($queryParams['params']);
 	}
 
@@ -428,8 +470,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function delete($table, $conditions = '', $params = array())
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$conditions = $this->_normalizeConditions($conditions, $params);
+
 		return parent::delete($table, $conditions, $params);
 	}
 
@@ -445,9 +488,9 @@ class DbCommand extends \CDbCommand
 	 *
 	 * @return int
 	 */
-	public function createTable($table, $columns, $options=null, $addIdColumn = true, $addAuditColumns = true)
+	public function createTable($table, $columns, $options = null, $addIdColumn = true, $addAuditColumns = true)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 
 		$columns = array_merge(
 			($addIdColumn ? array('id' => ColumnType::PK) : array()),
@@ -472,8 +515,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function renameTable($table, $newName)
 	{
-		$table = DbHelper::addTablePrefix($table);
-		$newName = DbHelper::addTablePrefix($newName);
+		$table = $this->getConnection()->addTablePrefix($table);
+		$newName = $this->getConnection()->addTablePrefix($newName);
+
 		return parent::renameTable($table, $newName);
 	}
 
@@ -484,7 +528,8 @@ class DbCommand extends \CDbCommand
 	 */
 	public function dropTable($table)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::dropTable($table);
 	}
 
@@ -495,8 +540,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function dropTableIfExists($table)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$sql = $this->getConnection()->getSchema()->dropTableIfExists($table);
+
 		return $this->setText($sql)->execute();
 	}
 
@@ -507,7 +553,8 @@ class DbCommand extends \CDbCommand
 	 */
 	public function truncateTable($table)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::truncateTable($table);
 	}
 
@@ -533,8 +580,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function addColumnFirst($table, $column, $type)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$type = DbHelper::generateColumnDefinition($type);
+
 		return $this->setText($this->getConnection()->getSchema()->addColumnFirst($table, $column, $type))->execute();
 	}
 
@@ -548,8 +596,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function addColumnBefore($table, $column, $type, $before)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$type = DbHelper::generateColumnDefinition($type);
+
 		return $this->setText($this->getConnection()->getSchema()->addColumnBefore($table, $column, $type, $before))->execute();
 	}
 
@@ -563,8 +612,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function addColumnAfter($table, $column, $type, $after)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$type = DbHelper::generateColumnDefinition($type);
+
 		return $this->setText($this->getConnection()->getSchema()->addColumnAfter($table, $column, $type, $after))->execute();
 	}
 
@@ -576,7 +626,8 @@ class DbCommand extends \CDbCommand
 	 */
 	public function dropColumn($table, $column)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::dropColumn($table, $column);
 	}
 
@@ -589,7 +640,8 @@ class DbCommand extends \CDbCommand
 	 */
 	public function renameColumn($table, $name, $newName)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::renameColumn($table, $name, $newName);
 	}
 
@@ -604,8 +656,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function alterColumn($table, $column, $type, $newName = null, $after = null)
 	{
-		$table = DbHelper::addTablePrefix($table);
+		$table = $this->getConnection()->addTablePrefix($table);
 		$type = DbHelper::generateColumnDefinition($type);
+
 		return $this->setText($this->getConnection()->getSchema()->alterColumn($table, $column, $type, $newName, $after))->execute();
 	}
 
@@ -621,9 +674,10 @@ class DbCommand extends \CDbCommand
 	 */
 	public function addForeignKey($table, $columns, $refTable, $refColumns, $delete = null, $update = null)
 	{
-		$name = DbHelper::getForeignKeyName($table, $columns);
-		$table = DbHelper::addTablePrefix($table);
-		$refTable = DbHelper::addTablePrefix($refTable);
+		$name = $this->getConnection()->getForeignKeyName($table, $columns);
+		$table = $this->getConnection()->addTablePrefix($table);
+		$refTable = $this->getConnection()->addTablePrefix($refTable);
+
 		return parent::addForeignKey($name, $table, $columns, $refTable, $refColumns, $delete, $update);
 	}
 
@@ -635,8 +689,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function dropForeignKey($table, $columns)
 	{
-		$name = DbHelper::getForeignKeyName($table, $columns);
-		$table = DbHelper::addTablePrefix($table);
+		$name = $this->getConnection()->getForeignKeyName($table, $columns);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::dropForeignKey($name, $table);
 	}
 
@@ -649,8 +704,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function createIndex($table, $columns, $unique = false)
 	{
-		$name = DbHelper::getIndexName($table, $columns, $unique);
-		$table = DbHelper::addTablePrefix($table);
+		$name = $this->getConnection()->getIndexName($table, $columns, $unique);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::createIndex($name, $table, $columns, $unique);
 	}
 
@@ -663,8 +719,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function dropIndex($table, $columns, $unique = false)
 	{
-		$name = DbHelper::getIndexName($table, $columns, $unique);
-		$table = DbHelper::addTablePrefix($table);
+		$name = $this->getConnection()->getIndexName($table, $columns, $unique);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::dropIndex($name, $table);
 	}
 
@@ -676,8 +733,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function addPrimaryKey($table, $columns)
 	{
-		$name = DbHelper::getPrimaryKeyName($table, $columns);
-		$table = DbHelper::addTablePrefix($table);
+		$name = $this->getConnection()->getPrimaryKeyName($table, $columns);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::addPrimaryKey($name, $table, $columns);
 	}
 
@@ -689,8 +747,9 @@ class DbCommand extends \CDbCommand
 	 */
 	public function dropPrimaryKey($table, $columns)
 	{
-		$name = DbHelper::getPrimaryKeyName($table, $columns);
-		$table = DbHelper::addTablePrefix($table);
+		$name = $this->getConnection()->getPrimaryKeyName($table, $columns);
+		$table = $this->getConnection()->addTablePrefix($table);
+
 		return parent::dropPrimaryKey($name, $table);
 	}
 
@@ -753,7 +812,7 @@ class DbCommand extends \CDbCommand
 			if (!is_numeric($key))
 			{
 				$param = ':p'.StringHelper::randomString(9);
-				$normalizedConditions[] = craft()->db->quoteColumnName($key).'='.$param;
+				$normalizedConditions[] = $this->getConnection()->quoteColumnName($key).'='.$param;
 				$params[$param] = $value;
 				unset($conditions[$key]);
 			}

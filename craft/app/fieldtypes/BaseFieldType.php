@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.fieldtypes
  * @since     1.0
  */
@@ -24,17 +24,38 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	public $element;
 
 	/**
-	 * The type of component this is.
+	 * The type of component, e.g. "Plugin", "Widget", "FieldType", etc. Defined by the component type's base class.
 	 *
 	 * @var string
 	 */
 	protected $componentType = 'FieldType';
 
+	/**
+	 * @var bool Whether the field is fresh.
+	 * @see isFresh()
+	 * @see setIsFresh()
+	 */
+	private $_isFresh;
+
 	// Public Methods
 	// =========================================================================
 
 	/**
-	 * @return mixed Returns the content attribute config.
+	 * @inheritDoc IFieldType::setElement()
+	 *
+	 * @param $element
+	 *
+	 * @return null
+	 */
+	public function setElement(BaseElementModel $element)
+	{
+		$this->element = $element;
+	}
+
+	/**
+	 * @inheritDoc IFieldType::defineContentAttribute()
+	 *
+	 * @return mixed
 	 */
 	public function defineContentAttribute()
 	{
@@ -42,7 +63,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Performs any actions before a field is saved.
+	 * @inheritDoc IFieldType::onBeforeSave()
 	 *
 	 * @return null
 	 */
@@ -51,7 +72,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Performs any actions after a field is saved.
+	 * @inheritDoc IFieldType::onAfterSave()
 	 *
 	 * @return null
 	 */
@@ -60,7 +81,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Performs any actions before a field is deleted.
+	 * @inheritDoc IFieldType::onBeforeDelete()
 	 *
 	 * @return null
 	 */
@@ -69,7 +90,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Performs any actions after a field is deleted.
+	 * @inheritDoc IFieldType::onAfterDelete()
 	 *
 	 * @return null
 	 */
@@ -78,7 +99,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Returns the field's input HTML.
+	 * @inheritDoc IFieldType::getInputHtml()
 	 *
 	 * @param string $name
 	 * @param mixed  $value
@@ -87,11 +108,11 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	 */
 	public function getInputHtml($name, $value)
 	{
-		return '<textarea name="'.$name.'">'.$value.'</textarea>';
+		return HtmlHelper::encodeParams('<textarea name="{name}">{value}</textarea>', array('name' => $name, 'value' => $value));
 	}
 
 	/**
-	 * Returns static HTML for the field's value.
+	 * @inheritDoc IFieldType::getStaticHtml()
 	 *
 	 * @param mixed $value
 	 *
@@ -109,7 +130,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Returns the input value as it should be saved to the database.
+	 * @inheritDoc IFieldType::prepValueFromPost()
 	 *
 	 * @param mixed $value
 	 *
@@ -129,9 +150,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Validates the value beyond the checks that were assumed based on the content attribute.
-	 *
-	 * Returns 'true' or any custom validation errors.
+	 * @inheritDoc IFieldType::validate()
 	 *
 	 * @param mixed $value
 	 *
@@ -143,7 +162,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Performs any additional actions after the element has been saved.
+	 * @inheritDoc IFieldType::onAfterElementSave()
 	 *
 	 * @return null
 	 */
@@ -152,7 +171,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Returns the search keywords that should be associated with this field, based on the prepped post data.
+	 * @inheritDoc IFieldType::getSearchKeywords()
 	 *
 	 * @param mixed $value
 	 *
@@ -164,7 +183,21 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Preps the field value for use.
+	 * @inheritDoc IPreviewableFieldType::getTableAttributeHtml()
+	 *
+	 * @param mixed $value
+	 *
+	 * @return string
+	 */
+	public function getTableAttributeHtml($value)
+	{
+		$value = (string) $value;
+
+		return StringHelper::stripHtml($value);
+	}
+
+	/**
+	 * @inheritDoc IFieldType::prepValue()
 	 *
 	 * @param mixed $value
 	 *
@@ -176,7 +209,7 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	}
 
 	/**
-	 * Modifies an element query that's filtering by this field.
+	 * @inheritDoc IFieldType::modifyElementsQuery()
 	 *
 	 * @param DbCommand $query
 	 * @param mixed     $value
@@ -197,6 +230,18 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 				return false;
 			}
 		}
+	}
+
+	/**
+	 * Sets whether the field is fresh.
+	 *
+	 * @param bool|null $isFresh
+	 *
+	 * @return null
+	 */
+	public function setIsFresh($isFresh)
+	{
+		$this->_isFresh = $isFresh;
 	}
 
 	// Protected Methods
@@ -227,16 +272,18 @@ abstract class BaseFieldType extends BaseSavableComponentType implements IFieldT
 	 */
 	protected function isFresh()
 	{
-		// If this is for a Matrix block, we're more interested in its owner
-		if (isset($this->element) && $this->element->getElementType() == ElementType::MatrixBlock)
+		if (!isset($this->_isFresh))
 		{
-			$element = $this->element->getOwner();
-		}
-		else
-		{
-			$element = $this->element;
+			if (isset($this->element))
+			{
+				$this->_isFresh = $this->element->getHasFreshContent();
+			}
+			else
+			{
+				$this->_isFresh = true;
+			}
 		}
 
-		return (!$element || (empty($element->getContent()->id) && !$element->hasErrors()));
+		return $this->_isFresh;
 	}
 }

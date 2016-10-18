@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.services
  * @since     1.0
  */
@@ -38,7 +38,7 @@ class InstallService extends BaseApplicationComponent
 
 		if (craft()->isInstalled())
 		{
-			throw new Exception(Craft::t('Craft is already installed.'));
+			throw new Exception(Craft::t('Craft CMS is already installed.'));
 		}
 
 		// Set the language to the desired locale
@@ -59,7 +59,6 @@ class InstallService extends BaseApplicationComponent
 			$this->_createContentTable();
 			$this->_createRelationsTable();
 			$this->_createShunnedMessagesTable();
-			$this->_createSearchIndexTable();
 			$this->_createTemplateCacheTables();
 			$this->_createAndPopulateInfoTable($inputs);
 
@@ -74,6 +73,9 @@ class InstallService extends BaseApplicationComponent
 			{
 				$transaction->commit();
 			}
+
+			Craft::log('Creating search index table.');
+			$this->_createSearchIndexTable();
 		}
 		catch (\Exception $e)
 		{
@@ -114,35 +116,38 @@ class InstallService extends BaseApplicationComponent
 		$recordsFolder = craft()->path->getAppPath().'records/';
 		$recordFiles = IOHelper::getFolderContents($recordsFolder, false, ".*Record\.php$");
 
-		foreach ($recordFiles as $file)
+		if ($recordFiles)
 		{
-			if (IOHelper::fileExists($file))
+			foreach ($recordFiles as $file)
 			{
-				$fileName = IOHelper::getFileName($file, false);
-				$class = __NAMESPACE__.'\\'.$fileName;
-
-				// Ignore abstract classes and interfaces
-				$ref = new \ReflectionClass($class);
-				if ($ref->isAbstract() || $ref->isInterface())
+				if (IOHelper::fileExists($file))
 				{
-					Craft::log("Skipping record {$file} because it’s abstract or an interface.", LogLevel::Warning);
-					continue;
-				}
+					$fileName = IOHelper::getFileName($file, false);
+					$class = __NAMESPACE__.'\\'.$fileName;
 
-				$obj = new $class('install');
+					// Ignore abstract classes and interfaces
+					$ref = new \ReflectionClass($class);
+					if ($ref->isAbstract() || $ref->isInterface())
+					{
+						Craft::log("Skipping record {$file} because it’s abstract or an interface.", LogLevel::Warning);
+						continue;
+					}
 
-				if (method_exists($obj, 'createTable'))
-				{
-					$records[] = $obj;
+					$obj = new $class('install');
+
+					if (method_exists($obj, 'createTable'))
+					{
+						$records[] = $obj;
+					}
+					else
+					{
+						Craft::log("Skipping record {$file} because it doesn’t have a createTable() method.", LogLevel::Warning);
+					}
 				}
 				else
 				{
-					Craft::log("Skipping record {$file} because it doesn’t have a createTable() method.", LogLevel::Warning);
+					Craft::log("Skipping record {$file} because it doesn’t exist.", LogLevel::Warning);
 				}
-			}
-			else
-			{
-				Craft::log("Skipping record {$file} because it doesn’t exist.", LogLevel::Warning);
 			}
 		}
 
@@ -220,7 +225,7 @@ class InstallService extends BaseApplicationComponent
 			'sourceId'     => array('column' => ColumnType::Int, 'null' => false),
 			'sourceLocale' => array('column' => ColumnType::Locale),
 			'targetId'     => array('column' => ColumnType::Int, 'null' => false),
-			'sortOrder'    => array('column' => ColumnType::TinyInt),
+			'sortOrder'    => array('column' => ColumnType::SmallInt),
 		));
 
 		craft()->db->createCommand()->createIndex('relations', 'fieldId,sourceId,sourceLocale,targetId', true);
@@ -262,7 +267,7 @@ class InstallService extends BaseApplicationComponent
 		Craft::log('Creating the searchindex table.');
 
 		// Taking the scenic route here so we can get to MysqlSchema's $engine argument
-		$table = DbHelper::addTablePrefix('searchindex');
+		$table = craft()->db->addTablePrefix('searchindex');
 
 		$columns = array(
 			'elementId' => DbHelper::generateColumnDefinition(array('column' => ColumnType::Int, 'null' => false)),
@@ -279,7 +284,7 @@ class InstallService extends BaseApplicationComponent
 
 		// Add the FULLTEXT index on `keywords`
 		craft()->db->createCommand()->setText('CREATE FULLTEXT INDEX ' .
-			craft()->db->quoteTableName(DbHelper::getIndexName('searchindex', 'keywords')).' ON ' .
+			craft()->db->quoteTableName(craft()->db->getIndexName('searchindex', 'keywords')).' ON ' .
 			craft()->db->quoteTableName($table).' ' .
 			'('.craft()->db->quoteColumnName('keywords').')'
 		)->execute();
@@ -297,7 +302,7 @@ class InstallService extends BaseApplicationComponent
 		Craft::log('Creating the templatecaches table.');
 
 		craft()->db->createCommand()->createTable('templatecaches', array(
-			'cacheKey'   => array('column' => ColumnType::Varchar, 'length' => 36, 'null' => false),
+			'cacheKey'   => array('column' => ColumnType::Varchar, 'null' => false),
 			'locale'     => array('column' => ColumnType::Locale, 'null' => false),
 			'path'       => array('column' => ColumnType::Varchar),
 			'expiryDate' => array('column' => ColumnType::DateTime, 'null' => false),
@@ -446,6 +451,8 @@ class InstallService extends BaseApplicationComponent
 
 		craft()->db->createCommand()->createTable('assettransformindex', array(
 			'fileId'       => array('maxLength' => 11, 'column' => ColumnType::Int, 'required' => true),
+			'filename'     => array('maxLength' => 255, 'column' => ColumnType::Varchar, 'required' => false),
+			'format'       => array('maxLength' => 255, 'column' => ColumnType::Varchar, 'required' => false),
 			'location'     => array('maxLength' => 255, 'column' => ColumnType::Varchar, 'required' => true),
 			'sourceId'     => array('maxLength' => 11, 'column' => ColumnType::Int, 'required' => false),
 			'fileExists'   => array('column' => ColumnType::Bool),
@@ -610,7 +617,7 @@ class InstallService extends BaseApplicationComponent
 		Craft::log('Creating the Default tag group.');
 
 		$tagGroup = new TagGroupModel();
-		$tagGroup->name   = Craft::t('Default');
+		$tagGroup->name   = 'Default';
 		$tagGroup->handle = 'default';
 
 		// Save it
@@ -628,7 +635,7 @@ class InstallService extends BaseApplicationComponent
 		Craft::log('Creating the Default field group.');
 
 		$group = new FieldGroupModel();
-		$group->name = Craft::t('Default');
+		$group->name = 'Default';
 
 		if (craft()->fields->saveGroup($group))
 		{
@@ -639,38 +646,19 @@ class InstallService extends BaseApplicationComponent
 			Craft::log('Could not save the Default field group.', LogLevel::Warning);
 		}
 
-		// Heading field
-
-		Craft::log('Creating the Heading field.');
-
-		$headingField = new FieldModel();
-		$headingField->groupId      = $group->id;
-		$headingField->name         = Craft::t('Heading');
-		$headingField->handle       = 'heading';
-		$headingField->translatable = true;
-		$headingField->type         = 'PlainText';
-
-		if (craft()->fields->saveField($headingField))
-		{
-			Craft::log('Heading field created successfully.');
-		}
-		else
-		{
-			Craft::log('Could not save the Heading field.', LogLevel::Warning);
-		}
-
 		// Body field
 
 		Craft::log('Creating the Body field.');
 
 		$bodyField = new FieldModel();
 		$bodyField->groupId      = $group->id;
-		$bodyField->name         = Craft::t('Body');
+		$bodyField->name         = 'Body';
 		$bodyField->handle       = 'body';
 		$bodyField->translatable = true;
 		$bodyField->type         = 'RichText';
 		$bodyField->settings = array(
-			'configFile' => 'Standard.json'
+			'configFile' => 'Standard.json',
+			'columnType' => ColumnType::Text,
 		);
 
 		if (craft()->fields->saveField($bodyField))
@@ -688,7 +676,7 @@ class InstallService extends BaseApplicationComponent
 
 		$tagsField = new FieldModel();
 		$tagsField->groupId      = $group->id;
-		$tagsField->name         = Craft::t('Tags');
+		$tagsField->name         = 'Tags';
 		$tagsField->handle       = 'tags';
 		$tagsField->type         = 'Tags';
 		$tagsField->settings = array(
@@ -710,16 +698,15 @@ class InstallService extends BaseApplicationComponent
 
 		$homepageLayout = craft()->fields->assembleLayout(
 			array(
-				Craft::t('Content') => array($headingField->id, $bodyField->id)
+				'Content' => array($bodyField->id)
 			),
-			array($headingField->id, $bodyField->id),
-			true
+			array($bodyField->id)
 		);
 
 		$homepageLayout->type = ElementType::Entry;
 
 		$homepageSingleSection = new SectionModel();
-		$homepageSingleSection->name = Craft::t('Homepage');
+		$homepageSingleSection->name = 'Homepage';
 		$homepageSingleSection->handle = 'homepage';
 		$homepageSingleSection->type = SectionType::Single;
 		$homepageSingleSection->hasUrls = false;
@@ -745,6 +732,8 @@ class InstallService extends BaseApplicationComponent
 
 		$homepageEntryTypes = $homepageSingleSection->getEntryTypes();
 		$homepageEntryType = $homepageEntryTypes[0];
+		$homepageEntryType->hasTitleField = true;
+		$homepageEntryType->titleLabel = 'Title';
 		$homepageEntryType->setFieldLayout($homepageLayout);
 
 		if (craft()->sections->saveEntryType($homepageEntryType))
@@ -758,9 +747,7 @@ class InstallService extends BaseApplicationComponent
 
 		// Homepage content
 
-		$vars = array(
-			'siteName' => ucfirst(craft()->request->getServerName())
-		);
+		$siteName = ucfirst(craft()->request->getServerName());
 
 		Craft::log('Setting the Homepage content.');
 
@@ -769,10 +756,9 @@ class InstallService extends BaseApplicationComponent
 		$entryModel = $criteria->first();
 
 		$entryModel->locale = $inputs['locale'];
-		$entryModel->getContent()->heading = Craft::t('Welcome to {siteName}!', $vars);
-		$entryModel->getContent()->setAttributes(array(
-			'body' => '<p>'.Craft::t('It’s true, this site doesn’t have a whole lot of content yet, but don’t worry. Our web developers have just installed the CMS, and they’re setting things up for the content editors this very moment. Soon {siteName} will be an oasis of fresh perspectives, sharp analyses, and astute opinions that will keep you coming back again and again.', $vars).'</p>',
-			'heading' => Craft::t('Welcome to {siteName}!', $vars),
+		$entryModel->getContent()->title = 'Welcome to '.$siteName.'!';
+		$entryModel->setContentFromPost(array(
+			'body' => '<p>It’s true, this site doesn’t have a whole lot of content yet, but don’t worry. Our web developers have just installed the CMS, and they’re setting things up for the content editors this very moment. Soon '.$siteName.' will be an oasis of fresh perspectives, sharp analyses, and astute opinions that will keep you coming back again and again.</p>',
 		));
 
 		// Save the content
@@ -791,7 +777,7 @@ class InstallService extends BaseApplicationComponent
 
 		$newsSection = new SectionModel();
 		$newsSection->type     = SectionType::Channel;
-		$newsSection->name     = Craft::t('News');
+		$newsSection->name     = 'News';
 		$newsSection->handle   = 'news';
 		$newsSection->hasUrls  = true;
 		$newsSection->template = 'news/_entry';
@@ -816,10 +802,9 @@ class InstallService extends BaseApplicationComponent
 
 		$newsLayout = craft()->fields->assembleLayout(
 			array(
-				Craft::t('Content') => array($bodyField->id, $tagsField->id),
+				'Content' => array($bodyField->id, $tagsField->id),
 			),
-			array($bodyField->id),
-			true
+			array($bodyField->id)
 		);
 
 		$newsLayout->type = ElementType::Entry;
@@ -847,14 +832,14 @@ class InstallService extends BaseApplicationComponent
 		$newsEntry->locale     = $inputs['locale'];
 		$newsEntry->authorId   = $this->_user->id;
 		$newsEntry->enabled    = true;
-		$newsEntry->getContent()->title = Craft::t('We just installed Craft!');
+		$newsEntry->getContent()->title = 'We just installed Craft!';
 		$newsEntry->getContent()->setAttributes(array(
 			'body' => '<p>'
-					. Craft::t('Craft is the CMS that’s powering {siteName}. It’s beautiful, powerful, flexible, and easy-to-use, and it’s made by Pixel &amp; Tonic. We can’t wait to dive in and see what it’s capable of!', $vars)
+					. 'Craft is the CMS that’s powering '.$siteName.'. It’s beautiful, powerful, flexible, and easy-to-use, and it’s made by Pixel &amp; Tonic. We can’t wait to dive in and see what it’s capable of!'
 					. '</p><!--pagebreak--><p>'
-					. Craft::t('This is even more captivating content, which you couldn’t see on the News index page because it was entered after a Page Break, and the News index template only likes to show the content on the first page.')
+					. 'This is even more captivating content, which you couldn’t see on the News index page because it was entered after a Page Break, and the News index template only likes to show the content on the first page.'
 					. '</p><p>'
-					. Craft::t('Craft: a nice alternative to Word, if you’re making a website.')
+					. 'Craft: a nice alternative to Word, if you’re making a website.'
 					. '</p>',
 		));
 

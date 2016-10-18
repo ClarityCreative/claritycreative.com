@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -30,9 +30,9 @@ class FieldLayoutModel extends BaseModel
 	// =========================================================================
 
 	/**
-	 * Returns the layout's tabs.
+	 * Returns the layout’s tabs.
 	 *
-	 * @return array
+	 * @return FieldLayoutTabModel[] The layout’s tabs.
 	 */
 	public function getTabs()
 	{
@@ -52,9 +52,9 @@ class FieldLayoutModel extends BaseModel
 	}
 
 	/**
-	 * Returns the layout's fields.
+	 * Returns the layout’s fields.
 	 *
-	 * @return array
+	 * @return FieldLayoutFieldModel[] The layout’s fields.
 	 */
 	public function getFields()
 	{
@@ -62,7 +62,7 @@ class FieldLayoutModel extends BaseModel
 		{
 			if ($this->id)
 			{
-				$this->_fields = craft()->fields->getLayoutFieldsById($this->id);
+				$this->_fields = craft()->fields->getOrderedLayoutFieldsById($this->id);
 			}
 			else
 			{
@@ -74,9 +74,9 @@ class FieldLayoutModel extends BaseModel
 	}
 
 	/**
-	 * Returns the layout's fields' IDs.
+	 * Returns the layout’s fields’ IDs.
 	 *
-	 * @return array
+	 * @return array The layout’s fields’ IDs.
 	 */
 	public function getFieldIds()
 	{
@@ -91,9 +91,10 @@ class FieldLayoutModel extends BaseModel
 	}
 
 	/**
-	 * Sets the layout's tabs.
+	 * Sets the layout’s tabs.
 	 *
-	 * @param array $tabs
+	 * @param array|FieldLayoutTabModel[] $tabs An array of the layout’s tabs, which can either be FieldLayoutTabModel
+	 *                                          objects or arrays defining the tab’s attributes.
 	 *
 	 * @return null
 	 */
@@ -114,9 +115,11 @@ class FieldLayoutModel extends BaseModel
 	}
 
 	/**
-	 * Sets the layout's fields.
+	 * Sets the layout']”s fields.
 	 *
-	 * @param array $fields
+	 * @param array|FieldLayoutFieldModel[] $fields An array of the layout’s tabs, which can either be
+	 *                                              FieldLayoutFieldModel objects or arrays defining the tab’s
+	 *                                              attributes.
 	 *
 	 * @return null
 	 */
@@ -140,6 +143,8 @@ class FieldLayoutModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

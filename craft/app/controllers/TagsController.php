@@ -9,8 +9,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.controllers
  * @since     1.1
  */
@@ -103,7 +103,7 @@ class TagsController extends BaseController
 		$tagGroup->handle = craft()->request->getPost('handle');
 
 		// Set the field layout
-		$fieldLayout = craft()->fields->assembleLayoutFromPost(false);
+		$fieldLayout = craft()->fields->assembleLayoutFromPost();
 		$fieldLayout->type = ElementType::Tag;
 		$tagGroup->setFieldLayout($fieldLayout);
 
@@ -164,29 +164,44 @@ class TagsController extends BaseController
 
 		$criteria = craft()->elements->getCriteria(ElementType::Tag);
 		$criteria->groupId = $tagGroupId;
-		$criteria->search  = 'name:'.implode('* name:', preg_split('/\s+/', $search)).'*';
+		$criteria->title   = DbHelper::escapeParam($search).'*';
 		$criteria->id      = $notIds;
 		$tags = $criteria->find();
 
 		$return = array();
 		$exactMatches = array();
-		$tagNameLengths = array();
+		$tagTitleLengths = array();
 		$exactMatch = false;
 
-		$normalizedSearch = StringHelper::normalizeKeywords($search);
+		if (craft()->config->get('allowSimilarTags'))
+		{
+			$search = StringHelper::normalizeKeywords($search, array(), false);
+		}
+		else
+		{
+			$search = StringHelper::normalizeKeywords($search);
+		}
+
 
 		foreach ($tags as $tag)
 		{
 			$return[] = array(
-				'id'   => $tag->id,
-				'name' => $tag->name
+				'id'    => $tag->id,
+				'title' => $tag->getContent()->title
 			);
 
-			$tagNameLengths[] = mb_strlen($tag->name);
+			$tagTitleLengths[] = mb_strlen($tag->getContent()->title);
 
-			$normalizedName = StringHelper::normalizeKeywords($tag->name);
+			if (craft()->config->get('allowSimilarTags'))
+			{
+				$title = StringHelper::normalizeKeywords($tag->getContent()->title, array(), false);
+			}
+			else
+			{
+				$title = StringHelper::normalizeKeywords($tag->getContent()->title);
+			}
 
-			if ($normalizedName == $normalizedSearch)
+			if ($title == $search)
 			{
 				$exactMatches[] = 1;
 				$exactMatch = true;
@@ -197,7 +212,7 @@ class TagsController extends BaseController
 			}
 		}
 
-		array_multisort($exactMatches, SORT_DESC, $tagNameLengths, $return);
+		array_multisort($exactMatches, SORT_DESC, $tagTitleLengths, $return);
 
 		$this->returnJson(array(
 			'tags'       => $return,
@@ -217,7 +232,7 @@ class TagsController extends BaseController
 
 		$tag = new TagModel();
 		$tag->groupId = craft()->request->getRequiredPost('groupId');
-		$tag->name = craft()->request->getRequiredPost('name');
+		$tag->getContent()->title = craft()->request->getRequiredPost('title');
 
 		if (craft()->tags->saveTag($tag))
 		{

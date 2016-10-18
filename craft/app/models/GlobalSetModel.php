@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -45,7 +45,7 @@ class GlobalSetModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the field layout used by this element.
+	 * @inheritDoc BaseElementModel::getFieldLayout()
 	 *
 	 * @return FieldLayoutModel|null
 	 */
@@ -55,7 +55,7 @@ class GlobalSetModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the element's CP edit URL.
+	 * @inheritDoc BaseElementModel::getCpEditUrl()
 	 *
 	 * @return string|false
 	 */
@@ -68,6 +68,8 @@ class GlobalSetModel extends BaseElementModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

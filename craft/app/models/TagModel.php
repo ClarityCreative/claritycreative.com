@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.1
  */
@@ -25,17 +25,17 @@ class TagModel extends BaseElementModel
 	// =========================================================================
 
 	/**
-	 * Use the tag name as its string representation.
+	 * Use the tag title as its string representation.
 	 *
 	 * @return string
 	 */
 	public function __toString()
 	{
-		return $this->name;
+		return $this->getContent()->title;
 	}
 
 	/**
-	 * Returns whether the current user can edit the element.
+	 * @inheritDoc BaseElementModel::isEditable()
 	 *
 	 * @return bool
 	 */
@@ -45,7 +45,7 @@ class TagModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the field layout used by this element.
+	 * @inheritDoc BaseElementModel::getFieldLayout()
 	 *
 	 * @return FieldLayoutModel|null
 	 */
@@ -98,17 +98,30 @@ class TagModel extends BaseElementModel
 		return $this->getGroup();
 	}
 
+	/**
+	 * Returns the tag's title.
+	 *
+	 * @deprecated Deprecated in 2.3. Use {@link $title} instead.
+	 * @return string
+	 */
+	public function getName()
+	{
+		// TODO: Add a deprecation log in 3.0
+		return $this->getContent()->title;
+	}
+
 	// Protected Methods
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
 	{
 		return array_merge(parent::defineAttributes(), array(
 			'groupId' => AttributeType::Number,
-			'name'    => AttributeType::String,
 		));
 	}
 }

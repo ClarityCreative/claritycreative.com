@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.services
  * @since     1.0
  */
@@ -247,15 +247,30 @@ class ComponentsService extends BaseApplicationComponent
 
 			if ($component && $component->isSelectable())
 			{
-				// Save it
 				$classHandle = $component->getClassHandle();
-				$components[$classHandle] = $component;
-				$names[] = $component->getName();
+
+				// Make sure we don't have another component with the exact same class name
+				if (!isset($components[$classHandle]))
+				{
+					// Save it
+					$components[$classHandle] = $component;
+					$names[] = $component->getName();
+				}
 			}
 		}
 
 		// Now sort all the components by their name
-		array_multisort($names, $components);
+		// TODO: Remove this check for Craft 3.
+		if (PHP_VERSION_ID < 50400)
+		{
+			// Sort plugins by name
+			array_multisort($names, $components);
+		}
+		else
+		{
+			// Sort plugins by name
+			array_multisort($names, SORT_NATURAL | SORT_FLAG_CASE, $components);
+		}
 
 		return $components;
 	}

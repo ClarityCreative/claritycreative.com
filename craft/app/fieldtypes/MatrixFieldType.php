@@ -6,18 +6,18 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.fieldtypes
  * @since     1.3
  */
-class MatrixFieldType extends BaseFieldType
+class MatrixFieldType extends BaseFieldType implements IEagerLoadingFieldType
 {
 	// Public Methods
 	// =========================================================================
 
 	/**
-	 * Returns the type of field this is.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the content attribute config.
+	 * @inheritDoc IFieldType::defineContentAttribute()
 	 *
 	 * @return mixed
 	 */
@@ -37,7 +37,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the field's settings HTML.
+	 * @inheritDoc ISavableComponentType::getSettingsHtml()
 	 *
 	 * @return string|null
 	 */
@@ -50,13 +50,13 @@ class MatrixFieldType extends BaseFieldType
 		craft()->templates->includeJs('new Craft.MatrixConfigurator('.JsonHelper::encode($fieldTypeInfo).', "'.craft()->templates->getNamespace().'");');
 
 		craft()->templates->includeTranslations(
-			'What this block type will be called in the CP.',
-			'How you’ll refer to this block type in the templates.',
 			'Are you sure you want to delete this block type?',
+			'Are you sure you want to delete this field?',
+			'Field Type',
+			'How you’ll refer to this block type in the templates.',
 			'This field is required',
 			'This field is translatable',
-			'Field Type',
-			'Are you sure you want to delete this field?'
+			'What this block type will be called in the CP.'
 		);
 
 		$fieldTypeOptions = array();
@@ -77,7 +77,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Preps the settings before they're saved to the database.
+	 * @inheritDoc ISavableComponentType::prepSettings()
 	 *
 	 * @param array $settings
 	 *
@@ -98,9 +98,10 @@ class MatrixFieldType extends BaseFieldType
 			foreach ($settings['blockTypes'] as $blockTypeId => $blockTypeSettings)
 			{
 				$blockType = new MatrixBlockTypeModel();
-				$blockType->id     = $blockTypeId;
-				$blockType->name   = $blockTypeSettings['name'];
-				$blockType->handle = $blockTypeSettings['handle'];
+				$blockType->id      = $blockTypeId;
+				$blockType->fieldId = $this->model->id;
+				$blockType->name    = $blockTypeSettings['name'];
+				$blockType->handle  = $blockTypeSettings['handle'];
 
 				$fields = array();
 
@@ -112,6 +113,7 @@ class MatrixFieldType extends BaseFieldType
 						$field->id           = $fieldId;
 						$field->name         = $fieldSettings['name'];
 						$field->handle       = $fieldSettings['handle'];
+						$field->instructions = $fieldSettings['instructions'];
 						$field->required     = !empty($fieldSettings['required']);
 						$field->translatable = !empty($fieldSettings['translatable']);
 						$field->type         = $fieldSettings['type'];
@@ -141,7 +143,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Performs any actions after a field is saved.
+	 * @inheritDoc IFieldType::onAfterSave()
 	 *
 	 * @return null
 	 */
@@ -151,7 +153,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Performs any actions before a field is deleted.
+	 * @inheritDoc IFieldType::onBeforeDelete()
 	 *
 	 * @return null
 	 */
@@ -161,47 +163,97 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Preps the field value for use.
+	 * @inheritDoc IFieldType::prepValue()
 	 *
 	 * @param mixed $value
 	 *
-	 * @return ElementCriteriaModel|array
+	 * @return ElementCriteriaModel
 	 */
 	public function prepValue($value)
 	{
-		// $value will be an array of block data or an empty string if there was a validation error or we're loading a
-		// draft/version.
-		if (is_array($value))
+		$criteria = craft()->elements->getCriteria(ElementType::MatrixBlock);
+
+		// Existing element?
+		if (!empty($this->element->id))
 		{
-			return $value;
-		}
-		else if ($value === '')
-		{
-			return array();
+			$criteria->ownerId = $this->element->id;
 		}
 		else
 		{
-			$criteria = craft()->elements->getCriteria(ElementType::MatrixBlock);
+			$criteria->id = false;
+		}
 
-			// Existing element?
-			if (!empty($this->element->id))
+		$criteria->fieldId = $this->model->id;
+		$criteria->locale = $this->element->locale;
+
+		// Set the initially matched elements if $value is already set, which is the case if there was a validation
+		// error or we're loading an entry revision.
+		if (is_array($value) || $value === '')
+		{
+			$criteria->status = null;
+			$criteria->localeEnabled = null;
+			$criteria->limit = null;
+
+			if (is_array($value))
 			{
-				$criteria->ownerId = $this->element->id;
+				$prevElement = null;
+
+				foreach ($value as $element)
+				{
+					if ($prevElement)
+					{
+						$prevElement->setNext($element);
+						$element->setPrev($prevElement);
+					}
+
+					$prevElement = $element;
+				}
+
+				$criteria->setMatchedElements($value);
 			}
-			else
+			else if ($value === '')
 			{
-				$criteria->id = false;
+				// Means there were no blocks
+				$criteria->setMatchedElements(array());
 			}
+		}
 
-			$criteria->fieldId = $this->model->id;
-			$criteria->locale = $this->element->locale;
+		return $criteria;
+	}
 
-			return $criteria;
+	/**
+	 * @inheritDoc IFieldType::modifyElementsQuery()
+	 *
+	 * @param DbCommand $query
+	 * @param mixed     $value
+	 *
+	 * @return null|false
+	 */
+	public function modifyElementsQuery(DbCommand $query, $value)
+	{
+		if ($value == 'not :empty:')
+		{
+			$value = ':notempty:';
+		}
+
+		if ($value == ':notempty:' || $value == ':empty:')
+		{
+			$alias = 'matrixblocks_'.$this->model->handle;
+			$operator = ($value == ':notempty:' ? '!=' : '=');
+
+			$query->andWhere(
+				"(select count({$alias}.id) from {{matrixblocks}} {$alias} where {$alias}.ownerId = elements.id and {$alias}.fieldId = :fieldId) {$operator} 0",
+				array(':fieldId' => $this->model->id)
+			);
+		}
+		else if ($value !== null)
+		{
+			return false;
 		}
 	}
 
 	/**
-	 * Returns the field's input HTML.
+	 * @inheritDoc IFieldType::getInputHtml()
 	 *
 	 * @param string $name
 	 * @param mixed  $value
@@ -212,6 +264,21 @@ class MatrixFieldType extends BaseFieldType
 	{
 		$id = craft()->templates->formatInputId($name);
 		$settings = $this->getSettings();
+
+		if ($value instanceof ElementCriteriaModel)
+		{
+			$value->limit = null;
+			$value->status = null;
+			$value->localeEnabled = null;
+		}
+
+		$html = craft()->templates->render('_components/fieldtypes/Matrix/input', array(
+			'id' => $id,
+			'name' => $name,
+			'blockTypes' => $settings->getBlockTypes(),
+			'blocks' => $value,
+			'static' => false
+		));
 
 		// Get the block types data
 		$blockTypeInfo = $this->_getBlockTypeInfoForInput($name);
@@ -225,26 +292,23 @@ class MatrixFieldType extends BaseFieldType
 			($settings->maxBlocks ? $settings->maxBlocks : 'null') .
 		');');
 
-		craft()->templates->includeTranslations('Disabled', 'Actions', 'Collapse', 'Expand', 'Disable', 'Enable', 'Add {type} above', 'Add a block');
+		craft()->templates->includeTranslations(
+			'Actions',
+			'Add a block',
+			'Add {type} above',
+			'Are you sure you want to delete the selected blocks?',
+			'Collapse',
+			'Disable',
+			'Disabled',
+			'Enable',
+			'Expand'
+		);
 
-		if ($value instanceof ElementCriteriaModel)
-		{
-			$value->limit = null;
-			$value->status = null;
-			$value->localeEnabled = null;
-		}
-
-		return craft()->templates->render('_components/fieldtypes/Matrix/input', array(
-			'id' => $id,
-			'name' => $name,
-			'blockTypes' => $settings->getBlockTypes(),
-			'blocks' => $value,
-			'static' => false
-		));
+		return $html;
 	}
 
 	/**
-	 * Returns the input value as it should be saved to the database.
+	 * @inheritDoc IFieldType::prepValueFromPost()
 	 *
 	 * @param mixed $data
 	 *
@@ -356,10 +420,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Validates the value beyond the checks that were assumed based on the
-	 * content attribute.
-	 *
-	 * Returns 'true' or any custom validation errors.
+	 * @inheritDoc IFieldType::validate()
 	 *
 	 * @param array $blocks
 	 *
@@ -408,8 +469,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the search keywords that should be associated with this field,
-	 * based on the prepped post data.
+	 * @inheritDoc IFieldType::getSearchKeywords()
 	 *
 	 * @param mixed $value
 	 *
@@ -417,11 +477,10 @@ class MatrixFieldType extends BaseFieldType
 	 */
 	public function getSearchKeywords($value)
 	{
-		$criteria = $this->prepValue(null);
 		$keywords = array();
 		$contentService = craft()->content;
 
-		foreach ($criteria->find() as $block)
+		foreach ($value as $block)
 		{
 			$originalContentTable      = $contentService->contentTable;
 			$originalFieldColumnPrefix = $contentService->fieldColumnPrefix;
@@ -439,7 +498,7 @@ class MatrixFieldType extends BaseFieldType
 				{
 					$fieldType->element = $block;
 					$handle = $field->handle;
-					$keywords[] = $fieldType->getSearchKeywords($block->$handle);
+					$keywords[] = $fieldType->getSearchKeywords($block->getFieldValue($handle));
 				}
 			}
 
@@ -452,7 +511,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Performs any additional actions after the element has been saved.
+	 * @inheritDoc IFieldType::onAfterElementSave()
 	 *
 	 * @return null
 	 */
@@ -462,7 +521,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns static HTML for the field's value.
+	 * @inheritDoc IFieldType::getStaticHtml()
 	 *
 	 * @param mixed $value
 	 *
@@ -489,11 +548,46 @@ class MatrixFieldType extends BaseFieldType
 		}
 	}
 
+	/**
+	 * @inheritDoc IEagerLoadingFieldType::getEagerLoadingMap()
+	 *
+	 * @param BaseElementModel[]  $sourceElements
+	 *
+	 * @return array|false
+	 */
+	public function getEagerLoadingMap($sourceElements)
+	{
+		// Get the source element IDs
+		$sourceElementIds = array();
+
+		foreach ($sourceElements as $sourceElement)
+		{
+			$sourceElementIds[] = $sourceElement->id;
+		}
+
+		// Return any relation data on these elements, defined with this field
+		$map = craft()->db->createCommand()
+			->select('ownerId as source, id as target')
+			->from('matrixblocks')
+			->where(
+				array('and', 'fieldId=:fieldId', array('in', 'ownerId', $sourceElementIds)),
+				array(':fieldId' => $this->model->id)
+			)
+			->order('sortOrder')
+			->queryAll();
+
+		return array(
+			'elementType' => 'MatrixBlock',
+			'map' => $map,
+			'criteria' => array('fieldId' => $this->model->id)
+		);
+	}
+
 	// Protected Methods
 	// =========================================================================
 
 	/**
-	 * Returns the settings model.
+	 * @inheritDoc BaseSavableComponentType::getSettingsModel()
 	 *
 	 * @return BaseModel
 	 */
@@ -514,6 +608,7 @@ class MatrixFieldType extends BaseFieldType
 	{
 		$fieldTypes = array();
 
+		// Set a temporary namespace for these
 		$originalNamespace = craft()->templates->getNamespace();
 		$namespace = craft()->templates->namespaceInputName('blockTypes[__BLOCK_TYPE__][fields][__FIELD__][typesettings]', $originalNamespace);
 		craft()->templates->setNamespace($namespace);
@@ -546,7 +641,7 @@ class MatrixFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns info about each field type for the configurator.
+	 * Returns info about each block type and their field types for the Matrix field input.
 	 *
 	 * @param string $name
 	 *
@@ -556,18 +651,54 @@ class MatrixFieldType extends BaseFieldType
 	{
 		$blockTypes = array();
 
+		// Set a temporary namespace for these
 		$originalNamespace = craft()->templates->getNamespace();
 		$namespace = craft()->templates->namespaceInputName($name.'[__BLOCK__][fields]', $originalNamespace);
 		craft()->templates->setNamespace($namespace);
 
 		foreach ($this->getSettings()->getBlockTypes() as $blockType)
 		{
+			// Create a fake MatrixBlockModel so the field types have a way to get at the owner element, if there is one
+			$block = new MatrixBlockModel();
+			$block->fieldId = $this->model->id;
+			$block->typeId = $blockType->id;
+
+			if ($this->element)
+			{
+				$block->setOwner($this->element);
+				$block->locale = $this->element->locale;
+			}
+
+			$fieldLayoutFields = $blockType->getFieldLayout()->getFields();
+
+			foreach ($fieldLayoutFields as $fieldLayoutField)
+			{
+				$fieldType = $fieldLayoutField->getField()->getFieldType();
+
+				if ($fieldType)
+				{
+					$fieldType->element = $block;
+					$fieldType->setIsFresh(true);
+				}
+			}
+
 			craft()->templates->startJsBuffer();
 
 			$bodyHtml = craft()->templates->namespaceInputs(craft()->templates->render('_includes/fields', array(
 				'namespace' => null,
-				'fields' => $blockType->getFieldLayout()->getFields()
+				'fields'    => $fieldLayoutFields
 			)));
+
+			// Reset $_isFresh's
+			foreach ($fieldLayoutFields as $fieldLayoutField)
+			{
+				$fieldType = $fieldLayoutField->getField()->getFieldType();
+
+				if ($fieldType)
+				{
+					$fieldType->setIsFresh(null);
+				}
+			}
 
 			$footHtml = craft()->templates->clearJsBuffer();
 

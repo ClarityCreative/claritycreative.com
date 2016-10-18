@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -38,7 +38,14 @@ class UserModel extends BaseElementModel
 	 */
 	public function __toString()
 	{
-		return $this->username;
+		if (craft()->config->get('useEmailAsUsername'))
+		{
+			return $this->email;
+		}
+		else
+		{
+			return $this->username;
+		}
 	}
 
 	/**
@@ -87,6 +94,21 @@ class UserModel extends BaseElementModel
 		}
 
 		return $groups;
+	}
+
+	/**
+	 * Sets an array of {@link UserGroupModel} objects on the user.
+	 *
+	 * @param $groups An array of {@link UserGroupModel} objects.
+	 *
+	 * @return null
+	 */
+	public function setGroups($groups)
+	{
+		if (craft()->getEdition() == Craft::Pro)
+		{
+			$this->_groups = $groups;
+		}
 	}
 
 	/**
@@ -173,13 +195,42 @@ class UserModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the element's status.
+	 * @inheritDoc BaseElementModel::getStatus()
 	 *
 	 * @return string|null
 	 */
 	public function getStatus()
 	{
-		return $this->getAttribute('status');
+		if ($this->locked)
+		{
+			return UserStatus::Locked;
+		}
+
+		if ($this->suspended)
+		{
+			return UserStatus::Suspended;
+		}
+
+		if ($this->archived)
+		{
+			return UserStatus::Archived;
+		}
+
+		if ($this->pending)
+		{
+			return UserStatus::Pending;
+		}
+
+		return UserStatus::Active;
+	}
+
+	/**
+	 * Sets a user's status to active.
+	 */
+	public function setActive()
+	{
+		$this->pending = false;
+		$this->archived = false;
 	}
 
 	/**
@@ -193,12 +244,13 @@ class UserModel extends BaseElementModel
 	{
 		if ($this->photo)
 		{
-			return UrlHelper::getResourceUrl('userphotos/'.$this->username.'/'.$size.'/'.$this->photo);
+			$username = AssetsHelper::cleanAssetName($this->username, false, true);
+			return UrlHelper::getResourceUrl('userphotos/'.$username.'/'.$size.'/'.$this->photo);
 		}
 	}
 
 	/**
-	 * Returns the URL to the thumbnail for this user for a given size.
+	 * @inheritDoc BaseElementModel::getThumbUrl()
 	 *
 	 * @param int $size
 	 *
@@ -207,12 +259,23 @@ class UserModel extends BaseElementModel
 	public function getThumbUrl($size = 100)
 	{
 		$url = $this->getPhotoUrl($size);
+
 		if (!$url)
 		{
-			$url = UrlHelper::getResourceUrl('defaultuserphoto/'.$size);
+			$url = UrlHelper::getResourceUrl('defaultuserphoto');
 		}
 
 		return $url;
+	}
+
+	/**
+	 * @inheritDoc BaseElementModel::isEditable()
+	 *
+	 * @return bool
+	 */
+	public function isEditable()
+	{
+		return craft()->userSession->checkPermission('editUsers');
 	}
 
 	/**
@@ -244,9 +307,9 @@ class UserModel extends BaseElementModel
 	 */
 	public function can($permission)
 	{
-		if (craft()->getEdition() == Craft::Pro)
+		if (craft()->getEdition() >= Craft::Client)
 		{
-			if ($this->admin || $this->client)
+			if ($this->admin)
 			{
 				return true;
 			}
@@ -293,10 +356,16 @@ class UserModel extends BaseElementModel
 	{
 		if ($this->status == UserStatus::Locked)
 		{
-			$cooldownEnd = clone $this->lockoutDate;
-			$cooldownEnd->add(new DateInterval(craft()->config->get('cooldownDuration')));
+			// There was an old bug that where a user's lockoutDate could be null if they've
+			// passed their cooldownDuration already, but there account status is still locked.
+			// If that's the case, just let it return null as if they are past the cooldownDuration.
+			if ($this->lockoutDate)
+			{
+				$cooldownEnd = clone $this->lockoutDate;
+				$cooldownEnd->add(new DateInterval(craft()->config->get('cooldownDuration')));
 
-			return $cooldownEnd;
+				return $cooldownEnd;
+			}
 		}
 	}
 
@@ -320,7 +389,7 @@ class UserModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the element's CP edit URL.
+	 * @inheritDoc BaseElementModel::getCpEditUrl()
 	 *
 	 * @return string|false
 	 */
@@ -345,7 +414,7 @@ class UserModel extends BaseElementModel
 	}
 
 	/**
-	 * Populates a new user instance with a given set of attributes.
+	 * @inheritDoc BaseModel::populateModel()
 	 *
 	 * @param mixed $attributes
 	 *
@@ -364,7 +433,7 @@ class UserModel extends BaseElementModel
 			{
 				if (!$user->getRemainingCooldownTime())
 				{
-					craft()->users->activateUser($user);
+					craft()->users->unlockUser($user);
 				}
 			}
 		}
@@ -373,6 +442,11 @@ class UserModel extends BaseElementModel
 	}
 
 	/**
+	 * Validates all of the attributes for the current Model. Any attributes that fail validation will additionally get
+	 * logged to the `craft/storage/runtime/logs` folder with a level of LogLevel::Warning.
+	 *
+	 * In addition, we check that the username does not have any whitespace in it.
+	 *
 	 * @param null $attributes
 	 * @param bool $clearErrors
 	 *
@@ -393,6 +467,8 @@ class UserModel extends BaseElementModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
@@ -401,15 +477,19 @@ class UserModel extends BaseElementModel
 
 		return array_merge(parent::defineAttributes(), array(
 			'username'                   => array(AttributeType::String, 'maxLength' => 100, 'required' => $requireUsername),
-			'photo'                      => AttributeType::String,
+			'photo'                      => array(AttributeType::String, 'maxLength' => 100),
 			'firstName'                  => AttributeType::String,
 			'lastName'                   => AttributeType::String,
 			'email'                      => array(AttributeType::Email, 'required' => !$requireUsername),
 			'password'                   => AttributeType::String,
 			'preferredLocale'            => AttributeType::Locale,
+			'weekStartDay'               => array(AttributeType::Number, 'default' => craft()->config->get('defaultWeekStartDay')),
 			'admin'                      => AttributeType::Bool,
 			'client'                     => AttributeType::Bool,
-			'status'                     => array(AttributeType::Enum, 'values' => array(UserStatus::Active, UserStatus::Locked, UserStatus::Suspended, UserStatus::Pending, UserStatus::Archived), 'default' => UserStatus::Pending),
+			'locked'                     => AttributeType::Bool,
+			'suspended'                  => AttributeType::Bool,
+			'pending'                    => AttributeType::Bool,
+			'archived'                   => AttributeType::Bool,
 			'lastLoginDate'              => AttributeType::DateTime,
 			'invalidLoginCount'          => AttributeType::Number,
 			'lastInvalidLoginDate'       => AttributeType::DateTime,

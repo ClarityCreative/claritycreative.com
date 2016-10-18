@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.3
  */
@@ -26,11 +26,16 @@ class MatrixBlockModel extends BaseElementModel
 	 */
 	private $_owner;
 
+	/**
+	 * @var
+	 */
+	private $_eagerLoadedBlockTypeElements;
+
 	// Public Methods
 	// =========================================================================
 
 	/**
-	 * Returns the field layout used by this element.
+	 * @inheritDoc BaseElementModel::getFieldLayout()
 	 *
 	 * @return FieldLayoutModel|null
 	 */
@@ -45,7 +50,7 @@ class MatrixBlockModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the locale IDs this element is available in.
+	 * @inheritDoc BaseElementModel::getLocales()
 	 *
 	 * @return array
 	 */
@@ -135,7 +140,7 @@ class MatrixBlockModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the name of the table this element's content is stored in.
+	 * @inheritDoc BaseElementModel::getContentTable()
 	 *
 	 * @return string
 	 */
@@ -145,7 +150,7 @@ class MatrixBlockModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the field column prefix this element's content uses.
+	 * @inheritDoc BaseElementModel::getFieldColumnPrefix()
 	 *
 	 * @return string
 	 */
@@ -164,10 +169,85 @@ class MatrixBlockModel extends BaseElementModel
 		return 'matrixBlockType:'.$this->typeId;
 	}
 
+	/**
+	 * @inheritDoc BaseElementModel::hasEagerLoadedElements()
+	 *
+	 * @param string $handle
+	 *
+	 * @return bool
+	 */
+	public function hasEagerLoadedElements($handle)
+	{
+		// See if we have this stored with a block type-specific handle
+		$blockTypeHandle = $this->getType()->handle.':'.$handle;
+
+		if (isset($this->_eagerLoadedBlockTypeElements[$blockTypeHandle]))
+		{
+			return true;
+		}
+
+		return parent::hasEagerLoadedElements($handle);
+	}
+
+	/**
+	 * @inheritDoc BaseElementModel::getEagerLoadedElements()
+	 *
+	 * @param string $handle
+	 *
+	 * @return BaseElementModel[]|null
+	 */
+	public function getEagerLoadedElements($handle)
+	{
+		// See if we have this stored with a block type-specific handle
+		$blockTypeHandle = $this->getType()->handle.':'.$handle;
+
+		if (isset($this->_eagerLoadedBlockTypeElements[$blockTypeHandle]))
+		{
+			return $this->_eagerLoadedBlockTypeElements[$blockTypeHandle];
+		}
+
+		return parent::getEagerLoadedElements($handle);
+	}
+
+	/**
+	 * @inheritDoc BaseElementModel::setEagerLoadedElements()
+	 *
+	 * @param string             $handle
+	 * @param BaseElementModel[] $elements
+	 */
+	public function setEagerLoadedElements($handle, $elements)
+	{
+		// See if this was eager-loaded with a block type-specific handle
+		$blockTypeHandlePrefix = $this->getType()->handle.':';
+		if (strncmp($handle, $blockTypeHandlePrefix, strlen($blockTypeHandlePrefix)) === 0)
+		{
+			$this->_eagerLoadedBlockTypeElements[$handle] = $elements;
+		}
+		else
+		{
+			parent::setEagerLoadedElements($handle, $elements);
+		}
+	}
+
+	/**
+	 * @inheritDoc BaseElementModel::getHasFreshContent()
+	 *
+	 * @return bool
+	 */
+	public function getHasFreshContent()
+	{
+		// Defer to the owner element
+		$owner = $this->getOwner();
+
+		return $owner ? $owner->getHasFreshContent() : false;
+	}
+
 	// Protected Methods
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()

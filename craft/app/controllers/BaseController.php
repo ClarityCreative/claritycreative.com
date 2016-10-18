@@ -8,8 +8,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.controllers
  * @since     1.0
  */
@@ -38,9 +38,11 @@ abstract class BaseController extends \CController
 	// =========================================================================
 
 	/**
-	 * Include any route params gathered by {@link UrlManager} as controller action params.
+	 * Returns the request parameters that will be used for action parameter binding.
 	 *
-	 * @return array
+	 * By default, this method will return $_GET merged with {@link UrlManager::getRouteParams}.
+	 *
+	 * @return array The request parameters to be used for action parameter binding.
 	 */
 	public function getActionParams()
 	{
@@ -56,31 +58,16 @@ abstract class BaseController extends \CController
 	}
 
 	/**
-	 * Returns the folder containing view files for this controller. Craft overrides this since {@link \CController}'s
-	 * version defaults $module to craft().
-	 *
-	 * @return string The folder containing the view files for this controller.
-	 */
-	public function getViewPath()
-	{
-		if (($module = $this->getModule()) === null)
-		{
-			$module = craft();
-		}
-
-		return $module->getViewPath().'/';
-	}
-
-	/**
 	 * Renders a template, and either outputs or returns it.
 	 *
-	 * @param mixed $template      The name of the template to load, or a {@link StringTemplate} object.
+	 * @param mixed $template      The name of the template to load in a format supported by
+	 *                             {@link TemplatesService::findTemplate()}, or a {@link StringTemplate} object.
 	 * @param array $variables     The variables that should be available to the template.
-	 * @param bool  $return        Whether to return the results, rather than output them.
-	 * @param bool  $processOutput
+	 * @param bool  $return        Whether to return the results, rather than output them. (Default is `false`.)
+	 * @param bool  $processOutput Whether the output should be processed by {@link processOutput()}.
 	 *
 	 * @throws HttpException
-	 * @return mixed
+	 * @return mixed The rendered template if $return is set to `true`.
 	 */
 	public function renderTemplate($template, $variables = array(), $return = false, $processOutput = false)
 	{
@@ -97,28 +84,29 @@ abstract class BaseController extends \CController
 			}
 			else
 			{
-				// Get the template file's MIME type
-
-				// Safe to assume that findTemplate() will return an actual template path here, and not `false`. the
-				// template didn't exist, a TemplateLoaderException would have been thrown when calling
-				// craft()->templates->render().
-				$templateFile = craft()->templates->findTemplate($template);
-				$extension = IOHelper::getExtension($templateFile, 'html');
-
-				if ($extension == 'twig')
-				{
-					$extension = 'html';
-				}
-
-				// If Content-Type is set already, presumably the template set it with the {% header %} tag.
+				// Set the MIME type for the request based on the matched template's file extension (unless the
+				// Content-Type header was already set, perhaps by the template via the {% header %} tag)
 				if (!HeaderHelper::isHeaderSet('Content-Type'))
 				{
+					// Safe to assume that findTemplate() will return an actual template path here, and not `false`.
+					// If the template didn't exist, a TemplateLoaderException would have been thrown when calling
+					// craft()->templates->render().
+					$templateFile = craft()->templates->findTemplate($template);
+					$extension = IOHelper::getExtension($templateFile, 'html');
+
+					if ($extension == 'twig')
+					{
+						$extension = 'html';
+					}
+
 					HeaderHelper::setContentTypeByExtension($extension);
 				}
 
+				// Set the charset header
 				HeaderHelper::setHeader(array('charset' => 'utf-8'));
 
-				if ($extension == 'html')
+				// Are we serving HTML or XHTML?
+				if (in_array(HeaderHelper::getMimeType(), array('text/html', 'application/xhtml+xml')))
 				{
 					// Are there any head/foot nodes left in the queue?
 					$headHtml = craft()->templates->getHeadHtml();
@@ -148,14 +136,9 @@ abstract class BaseController extends \CController
 						}
 					}
 				}
-				else
-				{
-					// If this is a non-HTML, non-Twig request, remove the extra logging information.
-					craft()->log->removeRoute('WebLogRoute');
-					craft()->log->removeRoute('ProfileLogRoute');
-				}
 
-				// Output to the browser!
+				// Output it into a buffer, in case TasksService wants to close the connection prematurely
+				ob_start();
 				echo $output;
 
 				// End the request
@@ -169,7 +152,7 @@ abstract class BaseController extends \CController
 	}
 
 	/**
-	 * Redirects user to the login template if they're not logged in.
+	 * Redirects the user to the login template if they're not logged in.
 	 *
 	 * @return null
 	 */
@@ -182,7 +165,7 @@ abstract class BaseController extends \CController
 	}
 
 	/**
-	 * Requires the current user to be logged in as an admin.
+	 * Throws a 403 error if the current user is not an admin.
 	 *
 	 * @throws HttpException
 	 * @return null
@@ -196,7 +179,19 @@ abstract class BaseController extends \CController
 	}
 
 	/**
-	 * Returns a 400 if this isn't a POST request
+	 * Requires that the user has an elevated session.
+	 *
+	 */
+	public function requireElevatedSession()
+	{
+		if (!craft()->userSession->hasElevatedSession())
+		{
+			throw new HttpException(403, Craft::t('This action may only be performed with an elevated session.'));
+		}
+	}
+
+	/**
+	 * Throws a 400 error if this isn’t a POST request
 	 *
 	 * @throws HttpException
 	 * @return null
@@ -210,7 +205,7 @@ abstract class BaseController extends \CController
 	}
 
 	/**
-	 * Returns a 400 if this isn't an Ajax request.
+	 * Throws a 400 error if this isn’t an Ajax request.
 	 *
 	 * @throws HttpException
 	 * @return null
@@ -224,7 +219,7 @@ abstract class BaseController extends \CController
 	}
 
 	/**
-	 * Requires the current request to include a token.
+	 * Throws a 400 error if the current request doesn’t have a valid token.
 	 *
 	 * @throws HttpException
 	 * @return null
@@ -238,11 +233,11 @@ abstract class BaseController extends \CController
 	}
 
 	/**
-	 * Redirect
+	 * Redirects the browser to a given URL.
 	 *
-	 * @param      $url
-	 * @param bool $terminate
-	 * @param int  $statusCode
+	 * @param string $url The URL to redirect the browser to.
+	 * @param bool   $terminate Whether the request should be terminated.
+	 * @param int    $statusCode The status code to accompany the redirect. (Default is 302.)
 	 *
 	 * @return null
 	 */
@@ -262,45 +257,79 @@ abstract class BaseController extends \CController
 	/**
 	 * Redirects to the URI specified in the POST.
 	 *
-	 * @param mixed $object Object containing properties that should be parsed for in the URL.
+	 * @param mixed  $object  Object containing properties that should be parsed for in the URL.
+	 * @param string $default The default URL to redirect them to, if no 'redirect' parameter exists. If this is left
+	 *                        null, then the current request’s path will be used.
 	 *
 	 * @return null
 	 */
-	public function redirectToPostedUrl($object = null)
+	public function redirectToPostedUrl($object = null, $default = null)
 	{
-		$url = craft()->request->getPost('redirect');
+		$url = craft()->request->getValidatedPost('redirect');
 
 		if ($url === null)
 		{
-			$url = craft()->request->getPath();
+			if ($default !== null)
+			{
+				$url = $default;
+			}
+			else
+			{
+				$url = craft()->request->getPath();
+			}
 		}
 
 		if ($object)
 		{
-			$url = craft()->templates->renderObjectTemplate($url, $object);
+			$url = craft()->templates->renderObjectTemplate($url, $object, true);
 		}
 
 		$this->redirect($url);
 	}
 
 	/**
-	 * Respond with JSON
+	 * Responds to the request with JSON.
 	 *
-	 * @param array|null $var The array to JSON-encode and return
+	 * @param array $var     The array that should be JSON-encoded and returned to the browser.
+	 * @param array $options An array of options.
+	 *
+	 * The $options array can contain the following values:
+	 *
+	 * - `'expires'` - Sets the Expires header value (in seconds). Defaults to `false`, which prevents
+	 *                 the response from getting cached. If set to `null`, no Expires header will be set.
 	 *
 	 * @return null
 	 */
-	public function returnJson($var = array())
+	public function returnJson($var = array(), $options = array())
 	{
-		JsonHelper::sendJsonHeaders();
+		// Set the 'application/json' Content-Type header
+		JsonHelper::setJsonContentTypeHeader();
+
+		$options = array_merge(array(
+			'expires' => false,
+		), $options);
+
+		// Set the Expires header
+		if ($options['expires'] === false)
+		{
+			HeaderHelper::setNoCache();
+		}
+		else if ($options['expires'])
+		{
+			HeaderHelper::setExpires($options['expires']);
+		}
+
+		// Output it into a buffer, in case TasksService wants to close the connection prematurely
+		ob_start();
 		echo JsonHelper::encode($var);
+
 		craft()->end();
 	}
 
 	/**
-	 * Respond with a JSON error message
+	 * Responds to the request with a JSON error message.
 	 *
-	 * @param string $error The error message
+	 * @param string $error The error message.
 	 *
 	 * @return null
 	 */
@@ -335,13 +364,5 @@ abstract class BaseController extends \CController
 		}
 
 		return true;
-	}
-
-	/**
-	 * @return array
-	 */
-	public function filters()
-	{
-
 	}
 }

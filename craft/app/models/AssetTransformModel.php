@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.0
  */
@@ -54,6 +54,8 @@ class AssetTransformModel extends BaseModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
@@ -64,6 +66,7 @@ class AssetTransformModel extends BaseModel
 			'handle'              => AttributeType::Handle,
 			'width'               => AttributeType::Number,
 			'height'              => AttributeType::Number,
+			'format'              => AttributeType::String,
 			'dimensionChangeTime' => AttributeType::DateTime,
 			'mode'                => array(AttributeType::String, 'default' => 'crop'),
 			'position'            => array(AttributeType::String, 'default' => 'center-center'),

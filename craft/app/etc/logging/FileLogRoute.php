@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.logging
  * @since     1.0
  */
@@ -26,7 +26,7 @@ class FileLogRoute extends \CFileLogRoute
 		$this->setLogPath(craft()->path->getLogPath());
 
 		$this->levels = craft()->config->get('devMode') ? '' : 'error,warning';
-		$this->filter = craft()->config->get('devMode') ? 'CLogFilter' : null;
+		$this->filter = craft()->config->get('devMode') ? 'Craft\\LogFilter' : null;
 
 		parent::init();
 	}

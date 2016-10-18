@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.plugins
  * @since     1.0
  */
@@ -27,7 +27,9 @@ abstract class BasePlugin extends BaseSavableComponentType implements IPlugin
 	public $isEnabled = false;
 
 	/**
-	 * @var string The type of component this is.
+	 * The type of component, e.g. "Plugin", "Widget", "FieldType", etc. Defined by the component type's base class.
+	 *
+	 * @var string
 	 */
 	protected $componentType = 'Plugin';
 
@@ -35,33 +37,16 @@ abstract class BasePlugin extends BaseSavableComponentType implements IPlugin
 	// =========================================================================
 
 	/**
-	 * Returns the plugin’s version.
+	 * A wrapper for writing to the log files for plugins that will ultimately call {@link Craft::log()}. This allows
+	 * plugins to be able to write to their own log files at `craft/storage/runtime/logs/pluginHandle.log` using
+	 * `PluginHandle::log()` syntax.
 	 *
-	 * @return string
-	 */
-	abstract public function getVersion();
-
-	/**
-	 * Returns the plugin developer's name.
+	 * @param string $msg   The message to be logged.
+	 * @param string $level The level of the message (e.g. LogLevel::Trace', LogLevel::Info, LogLevel::Warning or
+	 *                      LogLevel::Error).
+	 * @param bool   $force Whether to force the message to be logged regardless of the level or category.
 	 *
-	 * @return string
-	 */
-	abstract public function getDeveloper();
-
-	/**
-	 * Returns the plugin developer's URL.
-	 *
-	 * @return string
-	 */
-	abstract public function getDeveloperUrl();
-
-	/**
-	 * A wrapper for logging with plugins.
-	 *
-	 * @param string $msg
-	 * @param string $level
-	 *
-	 * @param bool $force
+	 * @return mixed
 	 */
 	public static function log($msg, $level = LogLevel::Info, $force = false)
 	{
@@ -81,7 +66,47 @@ abstract class BasePlugin extends BaseSavableComponentType implements IPlugin
 	}
 
 	/**
-	 * Returns the plugin's source language
+	 * @inheritDoc IPlugin::getSchemaVersion()
+	 *
+	 * @return string|null
+	 */
+	public function getSchemaVersion()
+	{
+		return null;
+	}
+
+	/**
+	 * @inheritDoc IPlugin::getDescription()
+	 *
+	 * @return string|null
+	 */
+	public function getDescription()
+	{
+		return null;
+	}
+
+	/**
+	 * @inheritDoc IPlugin::getDocumentationUrl()
+	 *
+	 * @return string|null
+	 */
+	public function getDocumentationUrl()
+	{
+		return null;
+	}
+
+	/**
+	 * @inheritDoc IPlugin::getReleaseFeedUrl()
+	 *
+	 * @return string|null
+	 */
+	public function getReleaseFeedUrl()
+	{
+		return null;
+	}
+
+	/**
+	 * @inheritDoc IPlugin::getSourceLanguage()
 	 *
 	 * @return string
 	 */
@@ -91,20 +116,27 @@ abstract class BasePlugin extends BaseSavableComponentType implements IPlugin
 	}
 
 	/**
-	 * Returns the URL to the plugin's settings in the CP.
+	 * @inheritDoc IPlugin::hasSettings()
 	 *
-	 * A full URL is not required -- you can simply return "pluginname/settings".
-	 *
-	 * If this is left blank, a simple settings page will be provided, filled with whatever getSettingsHtml() returns.
+	 * @return bool Whether the plugin has settings
+	 */
+	public function hasSettings()
+	{
+		return $this->getSettingsUrl() || $this->getSettingsHtml();
+	}
+
+	/**
+	 * @inheritDoc IPlugin::getSettingsUrl()
 	 *
 	 * @return string|null
 	 */
 	public function getSettingsUrl()
 	{
+		return null;
 	}
 
 	/**
-	 * Returns whether this plugin has its own section in the CP.
+	 * @inheritDoc IPlugin::hasCpSection()
 	 *
 	 * @return bool
 	 */
@@ -114,9 +146,9 @@ abstract class BasePlugin extends BaseSavableComponentType implements IPlugin
 	}
 
 	/**
-	 * Creates any tables defined by the plugin's records.
+	 * @inheritDoc IPlugin::createTables()
 	 *
-	 * @return null
+	 * @return void
 	 */
 	public function createTables()
 	{
@@ -136,9 +168,9 @@ abstract class BasePlugin extends BaseSavableComponentType implements IPlugin
 	}
 
 	/**
-	 * Drops any tables defined by the plugin's records.
+	 * @inheritDoc IPlugin::dropTables()
 	 *
-	 * @return null
+	 * @return void
 	 */
 	public function dropTables()
 	{
@@ -158,41 +190,11 @@ abstract class BasePlugin extends BaseSavableComponentType implements IPlugin
 	}
 
 	/**
-	 * Perform any actions after the plugin has been installed.
+	 * @inheritDoc IPlugin::getRecords()
 	 *
-	 * @return null
-	 */
-	public function onAfterInstall()
-	{
-
-	}
-
-	/**
-	 * Perform any actions before the plugin has been installed.
+	 * @param string|null $scenario
 	 *
-	 * @return null
-	 */
-	public function onBeforeInstall()
-	{
-
-	}
-
-	/**
-	 * Perform any actions before the plugin gets uninstalled.
-	 *
-	 * @return null
-	 */
-	public function onBeforeUninstall()
-	{
-
-	}
-
-	/**
-	 * Returns the record classes provided by this plugin.
-	 *
-	 * @param string|null $scenario The scenario to initialize the records with.
-	 *
-	 * @return array
+	 * @return BaseRecord[]
 	 */
 	public function getRecords($scenario = null)
 	{
@@ -209,5 +211,32 @@ abstract class BasePlugin extends BaseSavableComponentType implements IPlugin
 		}
 
 		return $records;
+	}
+
+	/**
+	 * @inheritDoc IPlugin::onAfterInstall()
+	 *
+	 * @return void
+	 */
+	public function onAfterInstall()
+	{
+	}
+
+	/**
+	 * @inheritDoc IPlugin::onBeforeInstall()
+	 *
+	 * @return void
+	 */
+	public function onBeforeInstall()
+	{
+	}
+
+	/**
+	 * @inheritDoc IPlugin::onBeforeUninstall()
+	 *
+	 * @return void
+	 */
+	public function onBeforeUninstall()
+	{
 	}
 }

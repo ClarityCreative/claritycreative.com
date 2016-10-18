@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.services
  * @since     1.0
  */
@@ -233,6 +233,27 @@ class DashboardService extends BaseApplicationComponent
 		return true;
 	}
 
+
+	/**
+	 * Changes the colspan of a widget.
+	 *
+	 * @param int $widgetId
+	 * @param int $colspan
+	 *
+	 * @throws \Exception
+	 * @return bool
+	 */
+	public function changeWidgetColspan($widgetId, $colspan)
+	{
+		$widgetRecord = $this->_getUserWidgetRecordById($widgetId);
+		$widgetRecord->colspan = $colspan;
+		$widgetRecord->save();
+
+		return true;
+	}
+
+
+
 	// Private Methods
 	// =========================================================================
 
@@ -244,26 +265,6 @@ class DashboardService extends BaseApplicationComponent
 	private function _addDefaultUserWidgets()
 	{
 		$user = craft()->userSession->getUser();
-		$sections = craft()->sections->getAllSections();
-
-		foreach ($sections as $section)
-		{
-			if ($section->type !== SectionType::Single)
-			{
-				// Only add widgets for sections they have create privileges to.
-				if ($user->can('createEntries:'.$section->id))
-				{
-					$widget = new WidgetModel();
-					$widget->type = 'QuickPost';
-
-					$widget->settings = array(
-						'section' => $section->id
-					);
-
-					$this->saveUserWidget($widget);
-				}
-			}
-		}
 
 		// Recent Entries widget
 		$widget = new WidgetModel();
@@ -290,8 +291,8 @@ class DashboardService extends BaseApplicationComponent
 		$widget = new WidgetModel();
 		$widget->type = 'Feed';
 		$widget->settings = array(
-			'url'   => 'http://feeds.feedburner.com/blogandtonic',
-			'title' => 'Blog & Tonic'
+			'url'   => 'https://craftcms.com/news.rss',
+			'title' => 'Craft News'
 		);
 
 		$this->saveUserWidget($widget);
@@ -339,7 +340,7 @@ class DashboardService extends BaseApplicationComponent
 	 */
 	private function _noWidgetExists($widgetId)
 	{
-		throw new Exception(Craft::t('No widget exists with the ID “{id}”', array('id' => $widgetId)));
+		throw new Exception(Craft::t('No widget exists with the ID “{id}”.', array('id' => $widgetId)));
 	}
 
 	/**

@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.tasks
  * @since     2.0
  */
@@ -35,7 +35,7 @@ class ResaveElementsTask extends BaseTask
 	// =========================================================================
 
 	/**
-	 * Returns the default description for this task.
+	 * @inheritDoc ITask::getDescription()
 	 *
 	 * @return string
 	 */
@@ -49,7 +49,7 @@ class ResaveElementsTask extends BaseTask
 	}
 
 	/**
-	 * Gets the total number of steps for this task.
+	 * @inheritDoc ITask::getTotalSteps()
 	 *
 	 * @return int
 	 */
@@ -74,7 +74,7 @@ class ResaveElementsTask extends BaseTask
 	}
 
 	/**
-	 * Runs a task step.
+	 * @inheritDoc ITask::runStep()
 	 *
 	 * @param int $step
 	 *
@@ -82,22 +82,29 @@ class ResaveElementsTask extends BaseTask
 	 */
 	public function runStep($step)
 	{
-		$element = craft()->elements->getElementById($this->_elementIds[$step], $this->_elementType, $this->_localeId);
-
-		if (!$element || craft()->elements->saveElement($element, false))
+		try
 		{
-			return true;
-		}
-		else
-		{
-			$error = 'Encountered the following validation errors when trying to save '.strtolower($element->getElementType()).' element "'.$element.'" with the ID "'.$element->id.'":';
+			$element = craft()->elements->getElementById($this->_elementIds[$step], $this->_elementType, $this->_localeId);
 
-			foreach ($element->getAllErrors() as $attributeError)
+			if (!$element || craft()->elements->saveElement($element, false))
 			{
-				$error .= "\n - {$attributeError}";
+				return true;
 			}
+			else
+			{
+				$error = 'Encountered the following validation errors when trying to save '.strtolower($element->getElementType()).' element "'.$element.'" with the ID "'.$element->id.'":';
 
-			return $error;
+				foreach ($element->getAllErrors() as $attributeError)
+				{
+					$error .= "\n - {$attributeError}";
+				}
+
+				return $error;
+			}
+		}
+		catch (\Exception $e)
+		{
+			return 'An exception was thrown while trying to save the '.$this->_elementType.' with the ID “'.$this->_elementIds[$step].'”: '.$e->getMessage();
 		}
 	}
 
@@ -105,7 +112,7 @@ class ResaveElementsTask extends BaseTask
 	// =========================================================================
 
 	/**
-	 * Defines the settings.
+	 * @inheritDoc BaseSavableComponentType::defineSettings()
 	 *
 	 * @return array
 	 */

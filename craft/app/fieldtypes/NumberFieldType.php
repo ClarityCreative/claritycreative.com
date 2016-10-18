@@ -6,18 +6,18 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.fieldtypes
  * @since     1.0
  */
-class NumberFieldType extends BaseFieldType
+class NumberFieldType extends BaseFieldType implements IPreviewableFieldType
 {
 	// Public Methods
 	// =========================================================================
 
 	/**
-	 * Returns the type of field this is.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class NumberFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the field's settings HTML.
+	 * @inheritDoc ISavableComponentType::getSettingsHtml()
 	 *
 	 * @return string|null
 	 */
@@ -39,7 +39,7 @@ class NumberFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the content attribute config.
+	 * @inheritDoc IFieldType::defineContentAttribute()
 	 *
 	 * @return mixed
 	 */
@@ -47,11 +47,12 @@ class NumberFieldType extends BaseFieldType
 	{
 		$attribute = ModelHelper::getNumberAttributeConfig($this->settings->min, $this->settings->max, $this->settings->decimals);
 		$attribute['default'] = 0;
+
 		return $attribute;
 	}
 
 	/**
-	 * Returns the field's input HTML.
+	 * @inheritDoc IFieldType::getInputHtml()
 	 *
 	 * @param string $name
 	 * @param mixed  $value
@@ -73,7 +74,7 @@ class NumberFieldType extends BaseFieldType
 	}
 
 	/**
-	 * Returns the input value as it should be saved to the database.
+	 * @inheritDoc IFieldType::prepValueFromPost()
 	 *
 	 * @param mixed $data
 	 *
@@ -95,16 +96,12 @@ class NumberFieldType extends BaseFieldType
 	// =========================================================================
 
 	/**
-	 * Defines the settings.
+	 * @inheritDoc BaseSavableComponentType::getSettingsModel()
 	 *
-	 * @return array
+	 * @return BaseModel
 	 */
-	protected function defineSettings()
+	protected function getSettingsModel()
 	{
-		return array(
-			'min'      => array(AttributeType::Number, 'default' => 0),
-			'max'      => array(AttributeType::Number, 'compare' => '>= min'),
-			'decimals' => array(AttributeType::Number, 'default' => 0),
-		);
+		return new NumberFieldTypeSettingsModel();
 	}
 }

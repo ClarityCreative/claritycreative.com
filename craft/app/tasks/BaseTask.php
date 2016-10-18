@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.tasks
  * @since     2.0
  */
@@ -17,7 +17,7 @@ abstract class BaseTask extends BaseSavableComponentType implements ITask
 	// =========================================================================
 
 	/**
-	 *  The type of component this is.
+	 * The type of component, e.g. "Plugin", "Widget", "FieldType", etc. Defined by the component type's base class.
 	 *
 	 * @var string
 	 */
@@ -27,7 +27,7 @@ abstract class BaseTask extends BaseSavableComponentType implements ITask
 	// =========================================================================
 
 	/**
-	 * Returns the default description for this task.
+	 * @inheritDoc ITask::getDescription()
 	 *
 	 * @return string
 	 */
@@ -37,7 +37,7 @@ abstract class BaseTask extends BaseSavableComponentType implements ITask
 	}
 
 	/**
-	 * Returns the total number of steps for this task.
+	 * @inheritDoc ITask::getTotalSteps()
 	 *
 	 * @return int
 	 */
@@ -47,7 +47,7 @@ abstract class BaseTask extends BaseSavableComponentType implements ITask
 	}
 
 	/**
-	 * Runs a task step.
+	 * @inheritDoc ITask::runStep()
 	 *
 	 * @param int $step
 	 *

@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     2.0
  */
@@ -25,7 +25,7 @@ class CategoryModel extends BaseElementModel
 	// =========================================================================
 
 	/**
-	 * Returns the field layout used by this element.
+	 * @inheritDoc BaseElementModel::getFieldLayout()
 	 *
 	 * @return FieldLayoutModel|null
 	 */
@@ -40,7 +40,7 @@ class CategoryModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns the URL format used to generate this element's URL.
+	 * @inheritDoc BaseElementModel::getUrlFormat()
 	 *
 	 * @return string|null
 	 */
@@ -67,13 +67,35 @@ class CategoryModel extends BaseElementModel
 	}
 
 	/**
-	 * Returns whether the current user can edit the element.
+	 * @inheritDoc BaseElementModel::isEditable()
 	 *
 	 * @return bool
 	 */
 	public function isEditable()
 	{
 		return craft()->userSession->checkPermission('editCategories:'.$this->groupId);
+	}
+
+	/**
+	 * @inheritDoc BaseElementModel::getCpEditUrl()
+	 *
+	 * @return string|false
+	 */
+	public function getCpEditUrl()
+	{
+		$group = $this->getGroup();
+
+		if ($group)
+		{
+			$url = UrlHelper::getCpUrl('categories/'.$group->handle.'/'.$this->id.($this->slug ? '-'.$this->slug : ''));
+
+			if (craft()->isLocalized() && $this->locale != craft()->language)
+			{
+				$url .= '/'.$this->locale;
+			}
+
+			return $url;
+		}
 	}
 
 	/**
@@ -93,12 +115,17 @@ class CategoryModel extends BaseElementModel
 	// =========================================================================
 
 	/**
+	 * @inheritDoc BaseModel::defineAttributes()
+	 *
 	 * @return array
 	 */
 	protected function defineAttributes()
 	{
 		return array_merge(parent::defineAttributes(), array(
 			'groupId' => AttributeType::Number,
+
+			// Just used for saving categories
+			'newParentId'      => AttributeType::Number,
 		));
 	}
 }

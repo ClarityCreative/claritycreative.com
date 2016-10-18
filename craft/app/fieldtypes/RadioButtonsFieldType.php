@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.fieldtypes
  * @since     1.0
  */
@@ -17,7 +17,7 @@ class RadioButtonsFieldType extends BaseOptionsFieldType
 	// =========================================================================
 
 	/**
-	 * Returns the type of field this is.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class RadioButtonsFieldType extends BaseOptionsFieldType
 	}
 
 	/**
-	 * Returns the field's input HTML.
+	 * @inheritDoc IFieldType::getInputHtml()
 	 *
 	 * @param string $name
 	 * @param mixed  $value
@@ -41,14 +41,7 @@ class RadioButtonsFieldType extends BaseOptionsFieldType
 		// If this is a new entry, look for a default option
 		if ($this->isFresh())
 		{
-			foreach ($options as $option)
-			{
-				if (!empty($option['default']))
-				{
-					$value = $option['value'];
-					break;
-				}
-			}
+			$value = $this->getDefaultValue();
 		}
 
 		return craft()->templates->render('_includes/forms/radioGroup', array(
@@ -62,7 +55,7 @@ class RadioButtonsFieldType extends BaseOptionsFieldType
 	// =========================================================================
 
 	/**
-	 * Returns the label for the Options setting.
+	 * @inheritDoc BaseOptionsFieldType::getOptionsSettingsLabel()
 	 *
 	 * @return string
 	 */

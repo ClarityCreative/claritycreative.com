@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.requirements
  * @since     1.2
  */
@@ -27,30 +27,30 @@ class Requirements
 			new PhpVersionRequirement(),
 			new Requirement(
 				Craft::t('$_SERVER Variable'),
-				($message = static::_checkServerVar()) === '',
+				($serverMessage = static::_checkServerVar()) === '',
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
-				$message
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				$serverMessage
 			),
 			new Requirement(
 				Craft::t('Reflection extension'),
 				class_exists('Reflection', false),
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
+				'<a href="http://craftcms.com">Craft CMS</a>',
 				'The <a href="http://php.net/manual/en/class.reflectionextension.php">ReflectionExtension</a> is required.'
 			),
 			new Requirement(
 				Craft::t('PCRE extension'),
 				extension_loaded("pcre"),
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
+				'<a href="http://craftcms.com">Craft CMS</a>',
 				'<a href="http://php.net/manual/en/book.pcre.php">PCRE</a> is required.'
 			),
 			new Requirement(
 				'SPL extension',
 				extension_loaded("SPL"),
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
+				'<a href="http://craftcms.com">Craft CMS</a>',
 				'<a href="http://php.net/manual/en/book.spl.php">SPL</a> is required.'
 			),
 			new Requirement(
@@ -75,68 +75,77 @@ class Requirements
 				Craft::t('<a href="http://php.net/manual/en/book.mcrypt.php">Mcrypt</a> is required.')
 			),
 			new Requirement(
-				Craft::t('GD extension with FreeType support or Imagick extension'),
-				extension_loaded('gd') || extension_loaded('imagick'),
-				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
-				'<a href="http://php.net/manual/en/book.image.php">GD</a> or <a href="http://php.net/manual/en/class.imagick.php">Imagick</a> is required.'
+				Craft::t('GD extension with FreeType support'),
+				extension_loaded('gd'),
+				(!extension_loaded('imagick')), // Only required if ImageMagick isn't installed
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				'<a href="http://php.net/manual/en/book.image.php">GD</a> or <a href="http://php.net/manual/en/book.imagick.php">ImageMagick</a> is required, however ImageMagick is recommended as it adds animated GIF support, and preserves 8-bit and 24-bit PNGs during image transforms.'
+			),
+			new Requirement(
+				Craft::t('ImageMagick extension'),
+				extension_loaded('imagick'),
+				(!extension_loaded('gd')), // Only required if GD isn't installed
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				'<a href="http://php.net/manual/en/book.image.php">GD</a> or <a href="http://php.net/manual/en/book.imagick.php">ImageMagick</a> is required, however ImageMagick is recommended as it adds animated GIF support, and preserves 8-bit and 24-bit PNGs during image transforms.'
 			),
 			new Requirement(
 				Craft::t('MySQL version'),
 				version_compare(craft()->db->getServerVersion(), $requiredMysqlVersion, ">="),
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
-				Craft::t('MySQL {version} or higher is required to run Craft.', array('version' => $requiredMysqlVersion))
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				Craft::t('MySQL {version} or higher is required to run Craft CMS.', array('version' => $requiredMysqlVersion))
 			),
 			new Requirement(
 				Craft::t('MySQL InnoDB support'),
 				static::_isInnoDbEnabled(),
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
-				Craft::t('Craft requires the MySQL InnoDB storage engine to run.')
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				Craft::t('Craft CMS requires the MySQL InnoDB storage engine to run.')
 			),
 			new Requirement(
 				Craft::t('SSL support'),
 				extension_loaded('openssl'),
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
-				Craft::t('Craft requires <a href="http://php.net/manual/en/book.openssl.php">OpenSSL</a> in order to run.')
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				Craft::t('Craft CMS requires <a href="http://php.net/manual/en/book.openssl.php">OpenSSL</a> in order to run.')
 			),
 			new Requirement(
 				Craft::t('cURL support'),
 				extension_loaded('curl'),
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
-				Craft::t('Craft requires <a href="http://php.net/manual/en/book.curl.php">cURL</a> in order to run.')
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				Craft::t('Craft CMS requires <a href="http://php.net/manual/en/book.curl.php">cURL</a> in order to run.')
 			),
 			new Requirement(
 				Craft::t('crypt() with CRYPT_BLOWFISH enabled'),
+				($cryptMessage = static::_checkCryptBlowfish()) === '',
 				true,
-				function_exists('crypt') && defined('CRYPT_BLOWFISH') && CRYPT_BLOWFISH,
 				'<a href="http://www.yiiframework.com/doc/api/1.1/CPasswordHelper">CPasswordHelper</a>',
-				Craft::t('Craft requires the <a href="http://php.net/manual/en/function.crypt.php">crypt()</a> function with CRYPT_BLOWFISH enabled for secure password storage.')
+				$cryptMessage
 			),
 			new Requirement(
 				Craft::t('PCRE UTF-8 support'),
 				preg_match('/./u', 'Ü') === 1,
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
+				'<a href="http://craftcms.com">Craft CMS</a>',
 				Craft::t('<a href="http://php.net/manual/en/book.pcre.php">PCRE</a> must be compiled to support UTF-8.')
 			),
 			new Requirement(
 				Craft::t('Multibyte String support'),
 				(extension_loaded('mbstring') && ini_get('mbstring.func_overload') != 1),
 				true,
-				'<a href="http://buildwithcraft.com">Craft</a>',
-				Craft::t('Craft requires the <a href="http://www.php.net/manual/en/book.mbstring.php">Multibyte String extension</a> with <a href="http://php.net/manual/en/mbstring.overload.php">Function Overloading</a> disabled in order to run.')
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				Craft::t('Craft CMS requires the <a href="http://www.php.net/manual/en/book.mbstring.php">Multibyte String extension</a> with <a href="http://php.net/manual/en/mbstring.overload.php">Function Overloading</a> disabled in order to run.')
 			),
 			new Requirement(
-				Craft::t('iconv support'),
-				function_exists('iconv'),
+				Craft::t('fileinfo extension'),
+				extension_loaded('fileinfo'),
 				false,
-				'<a href="http://buildwithcraft.com">Craft</a>',
-				Craft::t('Craft requires <a href="http://php.net/manual/en/book.iconv.php">iconv</a> in order to run.')
+				'<a href="http://craftcms.com">Craft CMS</a>',
+				Craft::t('Used to try and guess the content type and encoding of files by looking for certain magic bytes sequences at specific positions within the file.')
 			),
+			new IconvRequirement(),
+			new WebRootExposedFolderRequirement(),
 		);
 	}
 
@@ -178,11 +187,38 @@ class Requirements
 	}
 
 	/**
+	 * Checks if crypt with blowfish is installed.  If it is, also checks to make sure the version installed isn't insecure.
+	 *
+	 * @see https://secure.php.net/security/crypt_blowfish.php
+	 *
+	 * @return string
+	 */
+	private static function _checkCryptBlowfish()
+	{
+		if (function_exists('crypt') && defined('CRYPT_BLOWFISH') && CRYPT_BLOWFISH)
+		{
+			$hash = '$2y$04$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
+			$test = crypt('password', $hash);
+
+			if ($test !== $hash)
+			{
+				return Craft::t('You have an insecure version of crypt installed. Please update PHP to 5.3.7 or later. (<a href="https://secure.php.net/security/crypt_blowfish.php">Find out more</a>)');
+			}
+		}
+		else
+		{
+			return Craft::t('Craft CMS requires the <a href="http://php.net/manual/en/function.crypt.php">crypt()</a> function with CRYPT_BLOWFISH enabled for secure password storage.');
+		}
+
+		return '';
+	}
+
+	/**
 	 * Checks to see if the MySQL InnoDB storage engine is installed and enabled.
 	 *
 	 * @return bool
 	 */
-	private function _isInnoDbEnabled()
+	private static function _isInnoDbEnabled()
 	{
 		$results = craft()->db->createCommand()->setText('SHOW ENGINES')->queryAll();
 
@@ -355,7 +391,7 @@ class PhpVersionRequirement extends Requirement
 			Craft::t('PHP Version'),
 			null,
 			true,
-			'<a href="http://buildwithcraft.com">Craft</a>'
+			'<a href="http://craftcms.com">Craft CMS</a>'
 		);
 	}
 
@@ -432,5 +468,180 @@ class PhpVersionRequirement extends Requirement
 			(version_compare(PHP_VERSION, '5.3', '>=') && version_compare(PHP_VERSION, '5.3.12', '<')) ||
 			(version_compare(PHP_VERSION, '5.4', '>=') && version_compare(PHP_VERSION, '5.4.2', '<'))
 		);
+	}
+}
+
+/**
+ * Iconv requirement class.
+ *
+ * @package craft.app.etc.requirements
+ */
+class IconvRequirement extends Requirement
+{
+	// Protected Methods
+	// =========================================================================
+
+	/**
+	 * @return IconvRequirement
+	 */
+	public function __construct()
+	{
+		parent::__construct(
+			Craft::t('iconv support'),
+			null,
+			false,
+			'<a href="http://craftcms.com">Craft CMS</a>'
+		);
+	}
+
+	/**
+	 * @return null
+	 */
+	public function getNotes()
+	{
+		if ($this->getResult() == RequirementResult::Warning)
+		{
+			return Craft::t('You have a buggy version of iconv installed. (See {url1} and {url2}.)', array(
+				'url1' => '<a href="https://bugs.php.net/bug.php?id=48147">PHP bug #48147</a>',
+				'url2' => '<a href="http://sourceware.org/bugzilla/show_bug.cgi?id=13541">iconv bug #13541</a>',
+			));
+		}
+		else
+		{
+			return Craft::t('{url} is recommended.', array(
+				'url' => '<a href="http://php.net/manual/en/book.iconv.php">iconv</a>',
+			));
+		}
+	}
+
+	// Protected Methods
+	// =========================================================================
+
+	/**
+	 * Calculates the result of this requirement.
+	 *
+	 * @return string
+	 */
+	protected function calculateResult()
+	{
+		if (function_exists('iconv'))
+		{
+			// See if it's the buggy version
+			if (\HTMLPurifier_Encoder::testIconvTruncateBug() != \HTMLPurifier_Encoder::ICONV_OK)
+			{
+				return RequirementResult::Warning;
+			}
+			else
+			{
+				return RequirementResult::Success;
+			}
+		}
+		else
+		{
+			return RequirementResult::Warning;
+		}
+	}
+}
+
+/**
+ * Attempts to determine if the craft folder is inside of web root.
+ *
+ * @package craft.app.etc.requirements
+ */
+class WebRootExposedFolderRequirement extends Requirement
+{
+	private $_webRootResults;
+
+	// Protected Methods
+	// =========================================================================
+
+	/**
+	 * @return WebRootExposedFolderRequirement
+	 */
+	public function __construct()
+	{
+		parent::__construct(
+			Craft::t('Sensitive Craft folders should not be publicly accessible'),
+			null,
+			false,
+			'<a href="http://craftcms.com">Craft CMS</a>'
+		);
+	}
+
+	/**
+	 * @return null
+	 */
+	public function getNotes()
+	{
+		if ($this->getResult() == RequirementResult::Warning)
+		{
+			$values = array_keys(array_intersect($this->_webRootResults, array(true)));
+			$folders = rtrim(implode(', ', $values), ', ');
+
+			return Craft::t('Your Craft folder(s) {folders} appear to be in your public web root folder instead of above web root, which is what we recommend. If you leave them in web root, you will want to make sure their contents are not publicly exposed, which is a security risk.', array('folders' => $folders));
+		}
+	}
+
+	// Protected Methods
+	// =========================================================================
+
+	/**
+	 * Calculates the result of this requirement.
+	 *
+	 * @return string
+	 */
+	protected function calculateResult()
+	{
+		// The paths to check.
+		$this->_webRootResults = array(
+			'storage'      => craft()->path->getStoragePath(),
+			'plugins'      => craft()->path->getPluginsPath(),
+			'config'       => craft()->path->getConfigPath(),
+			'app'          => craft()->path->getAppPath(),
+			'templates'    => craft()->path->getSiteTemplatesPath(),
+			'translations' => craft()->path->getSiteTranslationsPath(),
+		);
+
+		foreach ($this->_webRootResults as $key => $path)
+		{
+			if ($realPath = realpath($path))
+			{
+				$this->_webRootResults[$key] = $this->_isPathInsideWebRoot($realPath);
+			}
+		}
+
+		foreach ($this->_webRootResults as $result)
+		{
+			// We were able to connect to one of our exposed folder checks.
+			if ($result === true)
+			{
+				return RequirementResult::Warning;
+			}
+		}
+
+		return RequirementResult::Success;
+	}
+
+	// Private Methods
+	// =========================================================================
+
+	/**
+	 * @param $pathToTest
+	 *
+	 * @return bool
+	 */
+	private function _isPathInsideWebRoot($pathToTest)
+	{
+		$pathToTest = IOHelper::normalizePathSeparators($pathToTest);
+
+		// Get the base path without the script name.
+		$subBasePath = IOHelper::normalizePathSeparators(mb_substr(craft()->request->getScriptFile(), 0, -mb_strlen(craft()->request->getScriptUrl())));
+
+		if (mb_strpos($pathToTest, $subBasePath) !== false)
+		{
+			return true;
+		}
+
+		return false;
 	}
 }

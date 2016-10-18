@@ -1,8 +1,8 @@
 /**
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.resources
  */
 
@@ -16,21 +16,18 @@ Craft.Updater = Garnish.Base.extend(
 	$errorDetails: null,
 	data: null,
 
-	init: function(handle, manualUpdate)
+	init: function(data)
 	{
 		this.$graphic = $('#graphic');
 		this.$status = $('#status');
 
-		if (!handle)
+		if (!data || !data.handle)
 		{
 			this.showError(Craft.t('Unable to determine what to update.'));
 			return;
 		}
 
-		this.data = {
-			handle: handle,
-			manualUpdate: manualUpdate
-		};
+		this.data = data;
 
 		this.postActionRequest('update/prepare');
 	},
@@ -106,7 +103,23 @@ Craft.Updater = Garnish.Base.extend(
 	onErrorResponse: function(jqXHR)
 	{
 		this.$graphic.addClass('error');
-		var errorText = Craft.t('An error has occurred.  Please contact {email} and be sure to include the error message.', { email: '<a href="mailto:support@buildwithcraft.com?subject=Craft+Update+Failure">support@buildwithcraft.com</a>'} ) + '<br /><p>' + jqXHR.statusText + '</p><br /><p>' + jqXHR.responseText + '</p>';
+		var errorText =
+			'<p>'+Craft.t('A fatal error has occurred:')+'</p>' +
+			'<div id="error" class="code">' +
+				'<p><strong class="code">'+Craft.t('Status:')+'</strong> '+Craft.escapeHtml(jqXHR.statusText)+'</p>' +
+				'<p><strong class="code">'+Craft.t('Response:')+'</strong> '+Craft.escapeHtml(jqXHR.responseText)+'</p>' +
+			'</div>' +
+			'<a class="btn submit big" href="mailto:support@craftcms.com' +
+				'?subject='+encodeURIComponent('Craft update failure') +
+				'&body='+encodeURIComponent(
+					'Describe what happened here.\n\n' +
+					'-----------------------------------------------------------\n\n' +
+					'Status: '+jqXHR.statusText+'\n\n' +
+					'Response: '+jqXHR.responseText
+				) +
+			'">' +
+				Craft.t('Send for help') +
+			'</a>'
 
 		this.updateStatus(errorText);
 	},

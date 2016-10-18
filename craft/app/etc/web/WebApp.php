@@ -54,8 +54,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.etc.web
  * @since     1.0
  */
@@ -67,7 +67,7 @@ class WebApp extends \CWebApplication
 	/**
 	 * The language that the application is written in. This mainly refers to the language that the messages and view
 	 * files are in.
-     *
+	 *
 	 * Setting it here even though CApplication already defaults to 'en_us', so it's clear and in case they change it
 	 * down the road.
 	 *
@@ -85,16 +85,6 @@ class WebApp extends \CWebApplication
 	/**
 	 * @var
 	 */
-	private $_language;
-
-	/**
-	 * @var
-	 */
-	private $_templatePath;
-
-	/**
-	 * @var
-	 */
 	private $_editionComponents;
 
 	/**
@@ -102,21 +92,18 @@ class WebApp extends \CWebApplication
 	 */
 	private $_pendingEvents;
 
-	/**
-	 * @var bool
-	 */
-	private $_gettingLanguage = false;
-
 	// Public Methods
 	// =========================================================================
 
 	/**
+	 * Initializes the application.
+	 *
 	 * @return null
 	 */
 	public function init()
 	{
-		// Set default timezone to UTC
-		date_default_timezone_set('UTC');
+		// NOTE: Nothing that triggers a database connection should be made here until *after* _processResourceRequest()
+		// in processRequest() is called.
 
 		// Import all the built-in components
 		foreach ($this->componentAliases as $alias)
@@ -127,26 +114,38 @@ class WebApp extends \CWebApplication
 		// Attach our Craft app behavior.
 		$this->attachBehavior('AppBehavior', new AppBehavior());
 
+		// If there is a custom validationKey set, apply it here.
+		if ($validationKey = $this->config->get('validationKey'))
+		{
+			$this->security->setValidationKey($validationKey);
+
+			// Make sure any instances of Yii's CSecurityManager class are using the custom validation
+			// key as well
+			$this->getComponent('securityManager')->setValidationKey($validationKey);
+		}
+
+		// Attach our own custom Logger
+		Craft::setLogger(new Logger());
+
+		// If there is a custom appId set, apply it here.
+		if ($appId = $this->config->get('appId'))
+		{
+			$this->setId($appId);
+		}
+
 		// Initialize Cache, HttpRequestService and LogRouter right away (order is important)
 		$this->getComponent('cache');
 		$this->getComponent('request');
 		$this->getComponent('log');
 
 		// So we can try to translate Yii framework strings
-		craft()->coreMessages->attachEventHandler('onMissingTranslation', array('Craft\LocalizationHelper', 'findMissingTranslation'));
+		$this->coreMessages->attachEventHandler('onMissingTranslation', array('Craft\LocalizationHelper', 'findMissingTranslation'));
 
 		// Set our own custom runtime path.
 		$this->setRuntimePath($this->path->getRuntimePath());
 
-		// Attach our own custom Logger
-		Craft::setLogger(new Logger());
-
-		// If we're not in devMode, we're going to remove some logging routes.
-		if (!$this->config->get('devMode'))
-		{
-			$this->log->removeRoute('WebLogRoute');
-			$this->log->removeRoute('ProfileLogRoute');
-		}
+		// Set the edition components
+		$this->_setEditionComponents();
 
 		parent::init();
 	}
@@ -159,17 +158,52 @@ class WebApp extends \CWebApplication
 	 */
 	public function processRequest()
 	{
-		// If this is a resource request, we should respond with the resource ASAP
+		// If this is a resource request, we should respond with the resource ASAP.
 		$this->_processResourceRequest();
 
+		$configService = $this->config;
+
+		// If we're not in devMode, or it's a 'dontExtendSession' request, we're going to remove some logging routes.
+		if (!$configService->get('devMode') || (craft()->isInstalled() && !$this->userSession->shouldExtendSession()))
+		{
+			$this->log->removeRoute('WebLogRoute');
+			$this->log->removeRoute('ProfileLogRoute');
+		}
+
+		// Additionally, we don't want these in the log files at all.
+		if (craft()->isInstalled() && !$this->userSession->shouldExtendSession())
+		{
+			$this->log->removeRoute('FileLogRoute');
+		}
+
+		// If this is a CP request, prevent robots from indexing/following the page
+		// (see https://developers.google.com/webmasters/control-crawl-index/docs/robots_meta_tag)
+		if ($this->request->isCpRequest())
+		{
+			HeaderHelper::setHeader(array('X-Robots-Tag' => 'none'));
+			HeaderHelper::setHeader(array('X-Frame-Options' => 'SAMEORIGIN'));
+			HeaderHelper::setHeader(array('X-Content-Type-Options' => 'nosniff'));
+		}
+
+		// Send the X-Powered-By header?
+		if ($configService->get('sendPoweredByHeader'))
+		{
+			HeaderHelper::setHeader(array('X-Powered-By' => 'Craft CMS'));
+		}
+		else
+		{
+			// In case PHP is already setting one
+			HeaderHelper::removeHeader('X-Powered-By');
+		}
+
 		// Validate some basics on the database configuration file.
-		craft()->validateDbConfigFile();
+		$this->validateDbConfigFile();
 
 		// Process install requests
 		$this->_processInstallRequest();
 
 		// If the system in is maintenance mode and it's a site request, throw a 503.
-		if (craft()->isInMaintenanceMode() && $this->request->isSiteRequest())
+		if ($this->isInMaintenanceMode() && $this->request->isSiteRequest())
 		{
 			throw new HttpException(503);
 		}
@@ -177,23 +211,17 @@ class WebApp extends \CWebApplication
 		// Check if the app path has changed.  If so, run the requirements check again.
 		$this->_processRequirementsCheck();
 
-		// Now that we've ran the requirements checker, set MB to use UTF-8
-		mb_internal_encoding('UTF-8');
-		mb_http_input('UTF-8');
-		mb_http_output('UTF-8');
-		mb_detect_order('auto');
-
-		// Makes sure that the uploaded files are compatible with the current DB schema
+		// Makes sure that the uploaded files are compatible with the current database schema
 		if (!$this->updates->isSchemaVersionCompatible())
 		{
 			if ($this->request->isCpRequest())
 			{
-				$version = craft()->getVersion();
-				$build = craft()->getBuild();
-				$url = "http://download.buildwithcraft.com/craft/{$version}/{$version}.{$build}/Craft-{$version}.{$build}.zip";
+				$version = $this->getVersion();
+				$build = $this->getBuild();
+				$url = "https://download.craftcdn.com/craft/{$version}/{$version}.{$build}/Craft-{$version}.{$build}.zip";
 
-				throw new HttpException(200, Craft::t('Craft does not support backtracking to this version. Please upload Craft {url} or later.', array(
-					'url' => '<a href="'.$url.'">build '.$build.'</a>',
+				throw new HttpException(200, Craft::t('Craft CMS does not support backtracking to this version. Please upload Craft CMS {url} or later.', array(
+					'url' => '['.$build.']('.$url.')',
 				)));
 			}
 			else
@@ -202,14 +230,11 @@ class WebApp extends \CWebApplication
 			}
 		}
 
-		// Set the edition components
-		$this->_setEditionComponents();
-
 		// isCraftDbMigrationNeeded will return true if we're in the middle of a manual or auto-update for Craft itself.
 		// If we're in maintenance mode and it's not a site request, show the manual update template.
 		if (
 			$this->updates->isCraftDbMigrationNeeded() ||
-			(craft()->isInMaintenanceMode() && $this->request->isCpRequest()) ||
+			($this->isInMaintenanceMode() && $this->request->isCpRequest()) ||
 			$this->request->getActionSegments() == array('update', 'cleanUp') ||
 			$this->request->getActionSegments() == array('update', 'rollback')
 		)
@@ -221,87 +246,49 @@ class WebApp extends \CWebApplication
 		if ($this->updates->hasCraftBuildChanged())
 		{
 			$this->updates->updateCraftVersionInfo();
+
+			// Clear the template caches in case they've been compiled since this release was cut.
+			IOHelper::clearFolder($this->path->getCompiledTemplatesPath());
 		}
 
-		// Make sure that the system is on...
-		if (craft()->isSystemOn() ||
-			// ...or it's a CP request...
-			($this->request->isCpRequest() && (
-				// ...and the user has permission to access the CP when the site is off
-				$this->userSession->checkPermission('accessCpWhenSystemIsOff') ||
-				// ...or this is a manual update request
-				$this->request->getSegment(1) == 'manualupdate' ||
-				// ...or they're accessing the Login, Forgot Password, Set Password, or Validation pages
-				(($actionSegs = $this->request->getActionSegments()) && (
-					$actionSegs == array('users', 'login') ||
-					$actionSegs == array('users', 'forgotpassword') ||
-					$actionSegs == array('users', 'setpassword') ||
-					$actionSegs == array('users', 'validate') ||
-					$actionSegs[0] == 'update'
-				))
-			)) ||
-			// ...or it's a site request...
-			($this->request->isSiteRequest() && (
-				// ...and the user has permission to access the site when it's off
-				$this->userSession->checkPermission('accessSiteWhenSystemIsOff')
-			))
-		)
+		// If the system is offline, make sure they have permission to be here
+		$this->_enforceSystemStatusPermissions();
+
+		// Load the plugins
+		$this->plugins->loadPlugins();
+
+		// Check if a plugin needs to update the database.
+		if ($this->updates->isPluginDbUpdateNeeded())
 		{
-			// Load the plugins
-			craft()->plugins->loadPlugins();
+			$this->_processUpdateLogic();
+		}
 
-			// Check if a plugin needs to update the database.
-			if ($this->updates->isPluginDbUpdateNeeded())
+		// If this is a non-login, non-validate, non-setPassword CP request, make sure the user has access to the CP
+		if ($this->request->isCpRequest() && !($this->request->isActionRequest() && $this->_isSpecialCaseActionRequest()))
+		{
+			// Make sure the user has access to the CP
+			$this->userSession->requireLogin();
+			$this->userSession->requirePermission('accessCp');
+
+			// If they're accessing a plugin's section, make sure that they have permission to do so
+			$firstSeg = $this->request->getSegment(1);
+
+			if ($firstSeg)
 			{
-				$this->_processUpdateLogic();
-			}
+				$plugin = $plugin = $this->plugins->getPlugin($firstSeg);
 
-			// If this is a non-login, non-validate, non-setPassword CP request, make sure the user has access to the CP
-			if ($this->request->isCpRequest() && !($this->request->isActionRequest() && $this->_isSpecialCaseActionRequest()))
-			{
-				// Make sure the user has access to the CP
-				$this->userSession->requireLogin();
-				$this->userSession->requirePermission('accessCp');
-
-				// If they're accessing a plugin's section, make sure that they have permission to do so
-				$firstSeg = $this->request->getSegment(1);
-
-				if ($firstSeg)
+				if ($plugin)
 				{
-					$plugin = $plugin = $this->plugins->getPlugin($firstSeg);
-
-					if ($plugin)
-					{
-						$this->userSession->requirePermission('accessPlugin-'.$plugin->getClassHandle());
-					}
+					$this->userSession->requirePermission('accessPlugin-'.$plugin->getClassHandle());
 				}
 			}
-
-			// If this is an action request, call the controller
-			$this->_processActionRequest();
-
-			// If we're still here, finally let UrlManager do it's thing.
-			parent::processRequest();
 		}
-		else
-		{
-			// Log out the user
-			if ($this->userSession->isLoggedIn())
-			{
-				$this->userSession->logout(false);
-			}
 
-			if ($this->request->isCpRequest())
-			{
-				// Redirect them to the login screen
-				$this->userSession->requireLogin();
-			}
-			else
-			{
-				// Display the offline template
-				$this->runController('templates/offline');
-			}
-		}
+		// If this is an action request, call the controller
+		$this->_processActionRequest();
+
+		// If we're still here, finally let UrlManager do it's thing.
+		parent::processRequest();
 	}
 
 	/**
@@ -311,23 +298,7 @@ class WebApp extends \CWebApplication
 	 */
 	public function getLanguage()
 	{
-		if (!isset($this->_language))
-		{
-			// Defend against an infinite getLanguage() loop
-			if (!$this->_gettingLanguage)
-			{
-				$this->_gettingLanguage = true;
-				$this->setLanguage($this->_getTargetLanguage());
-			}
-			else
-			{
-				// We tried to get the language, but something went wrong. Use fallback to prevent infinite loop.
-				$this->setLanguage($this->_getFallbackLanguage());
-				$this->_gettingLanguage = false;
-			}
-		}
-
-		return $this->_language;
+		return $this->asa('AppBehavior')->getLanguage();
 	}
 
 	/**
@@ -339,7 +310,7 @@ class WebApp extends \CWebApplication
 	 */
 	public function setLanguage($language)
 	{
-		$this->_language = $language;
+		$this->asa('AppBehavior')->setLanguage($language);
 	}
 
 	/**
@@ -351,7 +322,7 @@ class WebApp extends \CWebApplication
 	 */
 	public function getLocale($localeId = null)
 	{
-		return craft()->i18n->getLocaleData($localeId);
+		return $this->i18n->getLocaleData($localeId);
 	}
 
 	/**
@@ -364,7 +335,7 @@ class WebApp extends \CWebApplication
 	 */
 	public function createController($route, $owner = null)
 	{
-		if (($route = trim($route, '/')) === '')
+		if ((array)$route === $route || ($route = trim($route, '/')) === '')
 		{
 			$route = $this->defaultController;
 		}
@@ -404,54 +375,6 @@ class WebApp extends \CWebApplication
 				$this->parseActionParams($action),
 			);
 		}
-	}
-
-	/**
-	 * Gets the viewPath for the incoming request.
-	 *
-	 * Craft can't use Yii's {@link setViewPath()} because Craft's view path depends on the request type, which is
-	 * initialized after web application, so we override getViewPath().
-	 *
-	 * @return string
-	 */
-	public function getViewPath()
-	{
-		if (!isset($this->_templatePath))
-		{
-			if (mb_strpos(get_class($this->request), 'HttpRequest') !== false)
-			{
-				$this->_templatePath = $this->path->getTemplatesPath();
-			}
-			else
-			{
-				// in the case of an exception, our custom classes are not loaded.
-				$this->_templatePath = CRAFT_TEMPLATES_PATH;
-			}
-		}
-
-		return $this->_templatePath;
-	}
-
-	/**
-	 * Sets the template path for the app.
-	 *
-	 * @param string $path
-	 *
-	 * @return null
-	 */
-	public function setViewPath($path)
-	{
-		$this->_templatePath = $path;
-	}
-
-	/**
-	 * Returns the CP templates path.
-	 *
-	 * @return string
-	 */
-	public function getSystemViewPath()
-	{
-		return $this->path->getCpTemplatesPath();
 	}
 
 	/**
@@ -596,15 +519,39 @@ class WebApp extends \CWebApplication
 	}
 
 	/**
-	 * Attaches an event listener, or remembers it for later if the component has not been initialized yet.
+	 * Attaches an event handler, or remembers it for later if the component has not been initialized yet.
 	 *
-	 * @param string $event
-	 * @param mixed  $handler
+	 * The event should be identified in a `serviceHandle.eventName` format. For example, if you want to add an event
+	 * handler for {@link EntriesService::onSaveEntry()}, you would do this:
+	 *
+	 * ```php
+	 * craft()->on('entries.saveEntry', function(Event $event) {
+	 *     // ...
+	 * });
+	 * ```
+	 *
+	 * Note that the actual event name (`saveEntry`) does not need to include the “`on`”.
+	 *
+	 * By default, event handlers will not get attached if Craft is current in the middle of updating itself or a
+	 * plugin. If you want the event to fire even in that condition, pass `true` to the $evenDuringUpdates argument.
+	 *
+	 * @param string $event             The event to listen for.
+	 * @param mixed  $handler           The event handler.
+	 * @param bool   $evenDuringUpdates Whether the event handler should be attached when Craft’s updater is running.
+	 *                                  Default is `false`.
 	 *
 	 * @return null
 	 */
-	public function on($event, $handler)
+	public function on($event, $handler, $evenDuringUpdates = false)
 	{
+		if (
+			!$evenDuringUpdates &&
+			$this->request->getActionSegments() == array('update', 'updateDatabase')
+		)
+		{
+			return;
+		}
+
 		list($componentId, $eventName) = explode('.', $event, 2);
 
 		$component = $this->getComponent($componentId, false);
@@ -626,7 +573,8 @@ class WebApp extends \CWebApplication
 	}
 
 	/**
-	 * Override getComponent() so we can attach any pending events if the component is getting initialized.
+	 * Override getComponent() so we can attach any pending events if the component is getting initialized as well as
+	 * do some special logic around creating the `craft()->db` application component.
 	 *
 	 * @param string $id
 	 * @param bool   $createIfNull
@@ -639,6 +587,12 @@ class WebApp extends \CWebApplication
 
 		if (!$component && $createIfNull)
 		{
+			if ($id === 'db')
+			{
+				$dbConnection = $this->asa('AppBehavior')->createDbConnection();
+				$this->setComponent('db', $dbConnection);
+			}
+
 			$component = parent::getComponent($id, true);
 			$this->_attachEventListeners($id);
 		}
@@ -669,7 +623,7 @@ class WebApp extends \CWebApplication
 	 */
 	public function getTimeZone()
 	{
-		return $this->getInfo('timezone');
+		return $this->asa('AppBehavior')->getTimezone();
 	}
 
 	/**
@@ -695,6 +649,43 @@ class WebApp extends \CWebApplication
 		}
 
 		return false;
+	}
+
+	// Events
+	// =========================================================================
+
+	/**
+	 * Fires an onEditionChange event.
+	 *
+	 * @param Event $event
+	 *
+	 * @throws \CException
+	 */
+	public function onEditionChange(Event $event)
+	{
+		$this->raiseEvent('onEditionChange', $event);
+	}
+
+	/**
+	 * @todo Remove for Craft 3.
+	 *
+	 * @param int    $code The level of the error raised.
+	 * @param string $message The error message.
+	 * @param string $file The filename that the error was raised in.
+	 * @param int    $line The line number the error was raised at.
+	 */
+	public function handleError($code, $message, $file, $line)
+	{
+		// PHP 7 turned some E_STRICT messages to E_WARNINGs. Code 2 is for all warnings
+		// and since there are no messages specific codes we have to parse the string for what
+		// we're looking for. Lame, but it works since all PHP error messages are always in English.
+		// https://stackoverflow.com/questions/11556375/is-there-a-way-to-localize-phps-error-output
+		if (version_compare(PHP_VERSION, '7', '>=') && $code === 2 && strpos($message, 'should be compatible with') !== false)
+		{
+			return;
+		}
+
+		parent::handleError($code, $message, $file, $line);
 	}
 
 	// Private Methods
@@ -759,7 +750,7 @@ class WebApp extends \CWebApplication
 		{
 			foreach ($this->_editionComponents as $edition => $editionComponents)
 			{
-				if (craft()->getEdition() >= $edition)
+				if ($this->getEdition() >= $edition)
 				{
 					$this->setComponents($editionComponents);
 				}
@@ -780,7 +771,7 @@ class WebApp extends \CWebApplication
 		$isCpRequest = $this->request->isCpRequest();
 
 		// Are they requesting an installer template/action specifically?
-		if ($isCpRequest && $this->request->getSegment(1) === 'install' && !craft()->isInstalled())
+		if ($isCpRequest && $this->request->getSegment(1) === 'install' && !$this->isInstalled())
 		{
 			$action = $this->request->getSegment(2, 'index');
 			$this->runController('install/'.$action);
@@ -796,7 +787,7 @@ class WebApp extends \CWebApplication
 		}
 
 		// Should they be?
-		else if (!craft()->isInstalled())
+		else if (!$this->isInstalled())
 		{
 			// Give it to them if accessing the CP
 			if ($isCpRequest)
@@ -804,106 +795,12 @@ class WebApp extends \CWebApplication
 				$url = UrlHelper::getUrl('install');
 				$this->request->redirect($url);
 			}
-			// Otherwise return a 404
+			// Otherwise return a 503
 			else
 			{
-				throw new HttpException(404);
+				throw new HttpException(503);
 			}
 		}
-	}
-
-	/**
-	 * Returns the target app language.
-	 *
-	 * @return string|null
-	 */
-	private function _getTargetLanguage()
-	{
-		if (craft()->isInstalled())
-		{
-			// Will any locale validation be necessary here?
-			if ($this->request->isCpRequest() || defined('CRAFT_LOCALE'))
-			{
-				if ($this->request->isCpRequest())
-				{
-					$locale = 'auto';
-				}
-				else
-				{
-					$locale = StringHelper::toLowerCase(CRAFT_LOCALE);
-				}
-
-				// Get the list of actual site locale IDs
-				$siteLocaleIds = $this->i18n->getSiteLocaleIds();
-
-				// Is it set to "auto"?
-				if ($locale == 'auto')
-				{
-					// Place this within a try/catch in case userSession is being fussy.
-					try
-					{
-						// If the user is logged in *and* has a primary language set, use that
-						$user = $this->userSession->getUser();
-
-						if ($user && $user->preferredLocale)
-						{
-							return $user->preferredLocale;
-						}
-					}
-					catch (\Exception $e)
-					{
-						Craft::log("Tried to determine the user's preferred locale, but got this exception: ".$e->getMessage(), LogLevel::Error);
-					}
-
-					// Otherwise check if the browser's preferred language matches any of the site locales
-					$browserLanguages = $this->request->getBrowserLanguages();
-
-					if ($browserLanguages)
-					{
-						foreach ($browserLanguages as $language)
-						{
-							if (in_array($language, $siteLocaleIds))
-							{
-								return $language;
-							}
-						}
-					}
-				}
-
-				// Is it set to a valid site locale?
-				else if (in_array($locale, $siteLocaleIds))
-				{
-					return $locale;
-				}
-			}
-
-			// Use the primary site locale by default
-			return $this->i18n->getPrimarySiteLocaleId();
-		}
-		else
-		{
-			return $this->_getFallbackLanguage();
-		}
-	}
-
-	/**
-	 * Tries to find a language match with the user's browser's preferred language(s).
-	 * If not uses the app's sourceLanguage.
-	 *
-	 * @return string
-	 */
-	private function _getFallbackLanguage()
-	{
-		// See if we have the CP translated in one of the user's browsers preferred language(s)
-		$language = $this->getTranslatedBrowserLanguage();
-
-		// Default to the source language.
-		if (!$language)
-		{
-			$language = $this->sourceLanguage;
-		}
-
-		return $language;
 	}
 
 	/**
@@ -927,12 +824,17 @@ class WebApp extends \CWebApplication
 	 */
 	private function _isSpecialCaseActionRequest()
 	{
+		$segments = $this->request->getActionSegments();
+
 		if (
-			$this->request->getActionSegments() == array('users', 'login') ||
-			$this->request->getActionSegments() == array('users', 'validate') ||
-			$this->request->getActionSegments() == array('users', 'setpassword') ||
-			$this->request->getActionSegments() == array('users', 'forgotpassword') ||
-			$this->request->getActionSegments() == array('users', 'saveUser'))
+			$segments == array('users', 'login') ||
+			$segments == array('users', 'logout') ||
+			$segments == array('users', 'setpassword') ||
+			$segments == array('users', 'forgotpassword') ||
+			$segments == array('users', 'sendPasswordResetEmail') ||
+			$segments == array('users', 'saveUser') ||
+			$segments == array('users', 'getAuthTimeout')
+		)
 		{
 			return true;
 		}
@@ -965,7 +867,7 @@ class WebApp extends \CWebApplication
 		// Only run for CP requests and if we're not in the middle of an update.
 		if ($this->request->isCpRequest() && !$update)
 		{
-			$cachedAppPath = craft()->cache->get('appPath');
+			$cachedAppPath = $this->cache->get('appPath');
 			$appPath = $this->path->getAppPath();
 
 			if ($cachedAppPath === false || $cachedAppPath !== $appPath)
@@ -997,8 +899,8 @@ class WebApp extends \CWebApplication
 			{
 				if ($this->updates->isBreakpointUpdateNeeded())
 				{
-					throw new HttpException(200, Craft::t('You need to be on at least Craft {url} before you can manually update to Craft {targetVersion} build {targetBuild}.', array(
-						'url'           => '<a href="'.CRAFT_MIN_BUILD_URL.'">build '.CRAFT_MIN_BUILD_REQUIRED.'</a>',
+					throw new HttpException(200, Craft::t('You need to be on at least Craft CMS {url} before you can manually update to Craft CMS {targetVersion} build {targetBuild}.', array(
+						'url'           => '[build '.CRAFT_MIN_BUILD_REQUIRED.']('.CRAFT_MIN_BUILD_URL.')',
 						'targetVersion' => CRAFT_VERSION,
 						'targetBuild'   => CRAFT_BUILD
 					)));
@@ -1012,6 +914,9 @@ class WebApp extends \CWebApplication
 							$this->userSession->setReturnUrl($this->request->getPath());
 						}
 					}
+
+					// Clear the template caches in case they've been compiled since this release was cut.
+					IOHelper::clearFolder($this->path->getCompiledTemplatesPath());
 
 					// Show the manual update notification template
 					$this->runController('templates/manualUpdateNotification');
@@ -1027,13 +932,108 @@ class WebApp extends \CWebApplication
 		}
 		else
 		{
-			// Use our own error template in case the custom 503 template comes with any SQL queries we're not ready for.
-			craft()->path->setTemplatesPath(craft()->path->getCpTemplatesPath());
-
+			// If an exception gets throw during the rendering of the 503 template, let
+			// TemplatesController->actionRenderError() take care of it.
 			throw new HttpException(503);
 		}
 
 		// <Gandalf> YOU SHALL NOT PASS!
 		$this->end();
+	}
+
+	/**
+	 * Checks if the system is off, and if it is, enforces the "Access the site/CP when the system is off" permissions.
+	 *
+	 * @throws HttpException
+	 * @return null
+	 */
+	private function _enforceSystemStatusPermissions()
+	{
+		if (!$this->_checkSystemStatusPermissions())
+		{
+			$error = null;
+
+			if ($this->userSession->isLoggedIn())
+			{
+				if ($this->request->isCpRequest())
+				{
+					$error = Craft::t('Your account doesn’t have permission to access the Control Panel when the system is offline.');
+				}
+				else
+				{
+					$error = Craft::t('Your account doesn’t have permission to access the site when the system is offline.');
+				}
+
+				$error .= ' ['.Craft::t('Log out?').']('.UrlHelper::getUrl(craft()->config->getLogoutPath()).')';
+			}
+			else
+			{
+				// If this is a CP request, redirect to the Login page
+				if ($this->request->isCpRequest())
+				{
+					$this->userSession->requireLogin();
+				}
+			}
+
+			throw new HttpException(503, $error);
+		}
+	}
+
+	/**
+	 * Returns whether the user has permission to be accessing the site/CP while it's offline, if it is.
+	 *
+	 * @return bool
+	 */
+	private function _checkSystemStatusPermissions()
+	{
+		if ($this->isSystemOn())
+		{
+			return true;
+		}
+
+		if ($this->request->isCpRequest() ||
+
+			// Special case because we hide the cpTrigger in emails.
+			$this->request->getPath() === craft()->config->get('actionTrigger').'/users/setpassword' ||
+			$this->request->getPath() === craft()->config->get('actionTrigger').'/users/verifyemail' ||
+			// Special case because this might be a request with a user that has "Access the site when the system is off"
+			// permissions and is in the process of logging in while the system is off.
+			$this->request->getActionSegments() == array('users', 'login')
+		)
+		{
+			if ($this->userSession->checkPermission('accessCpWhenSystemIsOff'))
+			{
+				return true;
+			}
+
+			if ($this->request->getSegment(1) == 'manualupdate')
+			{
+				return true;
+			}
+
+			$actionSegs = $this->request->getActionSegments();
+
+			if ($actionSegs && (
+				$actionSegs == array('users', 'login') ||
+				$actionSegs == array('users', 'logout') ||
+				$actionSegs == array('users', 'forgotpassword') ||
+				$actionSegs == array('users', 'sendPasswordResetEmail') ||
+				$actionSegs == array('users', 'setpassword') ||
+				$actionSegs == array('users', 'verifyemail') ||
+				$actionSegs[0] == 'update'
+			))
+			{
+				return true;
+			}
+		}
+		else
+		{
+			if ($this->userSession->checkPermission('accessSiteWhenSystemIsOff'))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

@@ -1,8 +1,8 @@
 /**
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.resources
  */
 
@@ -141,7 +141,7 @@ var LoginForm = Garnish.Base.extend(
 			loginName: this.$loginNameInput.val()
 		};
 
-		Craft.postActionRequest('users/forgotpassword', data, $.proxy(function(response, textStatus)
+		Craft.postActionRequest('users/sendPasswordResetEmail', data, $.proxy(function(response, textStatus)
 		{
 			if (textStatus == 'success')
 			{
@@ -174,7 +174,7 @@ var LoginForm = Garnish.Base.extend(
 			{
 				if (response.success)
 				{
-					window.location.href = Craft.getUrl(window.returnUrl);
+					window.location.href = Craft.getUrl(response.returnUrl);
 				}
 				else
 				{
@@ -209,14 +209,18 @@ var LoginForm = Garnish.Base.extend(
 			error = Craft.t('An unknown error occurred.');
 		}
 
-		this.$error = $('<p class="error" style="display:none">'+error+'</p>').appendTo(this.$form);
-		this.$error.fadeIn();
+		this.$error = $('<p class="error" style="display:none">'+error+'</p>').insertAfter($('.buttons', this.$form));
+		this.$error.velocity('fadeIn');
 	},
 
 	onForgetPassword: function(event)
 	{
 		event.preventDefault();
-		this.$loginNameInput.focus();
+
+		if (!Garnish.isMobileBrowser())
+		{
+			this.$loginNameInput.focus();
+		}
 
 		if (this.$error)
 		{
@@ -227,9 +231,10 @@ var LoginForm = Garnish.Base.extend(
 			loginFieldsHeight = this.$loginFields.height(),
 			newFormTopMargin = formTopMargin + Math.round(loginFieldsHeight/2);
 
-		this.$form.animate({marginTop: newFormTopMargin}, 'fast');
-		this.$loginFields.animate({height: 0}, 'fast');
+		this.$form.velocity({marginTop: newFormTopMargin}, 'fast');
+		this.$loginFields.velocity({height: 0}, 'fast');
 
+		this.$form.addClass('reset-password');
 		this.$submitBtn.addClass('reset-password');
 		this.$submitBtn.attr('value', Craft.t('Reset Password'));
 		this.$submitBtn.enable();

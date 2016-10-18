@@ -1,8 +1,8 @@
 /**
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.resources
  */
 
@@ -95,7 +95,7 @@ Craft.Installer = Garnish.Base.extend(
 			this.$currentScreen.find('h1:first').text(Craft.t('All done!'));
 
 			var $buttons = $('<div class="buttons"/>'),
-				$go = $('<div class="btn big submit">'+Craft.t('Go to Craft')+'</div>').appendTo($buttons);
+				$go = $('<div class="btn big submit">'+Craft.t('Go to Craft CMS')+'</div>').appendTo($buttons);
 
 			$('#spinner').replaceWith($buttons);
 
@@ -121,7 +121,7 @@ Craft.Installer = Garnish.Base.extend(
 		}
 
 		// Slide the BG
-		this.$bg.animate({ left: '-'+(i*5)+'%' }, bgDuration);
+		this.$bg.velocity({ left: '-'+(i*5)+'%' }, bgDuration);
 
 		// Slide out the old screen
 		var windowWidth = Garnish.$win.width(),
@@ -131,7 +131,7 @@ Craft.Installer = Garnish.Base.extend(
 		{
 			this.$currentScreen
 				.css('left', centeredLeftPos)
-				.animate({ left: -400 }, Craft.Installer.duration);
+				.velocity({ left: -400 }, Craft.Installer.duration);
 		}
 
 		// Slide in the new screen
@@ -140,7 +140,7 @@ Craft.Installer = Garnish.Base.extend(
 				display: 'block',
 				left: windowWidth + 400
 			})
-			.animate({ left: centeredLeftPos }, Craft.Installer.duration, $.proxy(function()
+			.velocity({ left: centeredLeftPos }, Craft.Installer.duration, $.proxy(function()
 			{
 				// Relax the screen
 				this.$currentScreen.css('left', '50%');

@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.elementtypes
  * @since     1.0
  */
@@ -17,7 +17,7 @@ class UserElementType extends BaseElementType
 	// =========================================================================
 
 	/**
-	 * Returns the element type name.
+	 * @inheritDoc IComponentType::getName()
 	 *
 	 * @return string
 	 */
@@ -27,7 +27,7 @@ class UserElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns whether this element type has content.
+	 * @inheritDoc IElementType::hasContent()
 	 *
 	 * @return bool
 	 */
@@ -58,12 +58,12 @@ class UserElementType extends BaseElementType
 			UserStatus::Pending   => Craft::t('Pending'),
 			UserStatus::Locked    => Craft::t('Locked'),
 			UserStatus::Suspended => Craft::t('Suspended'),
-			UserStatus::Archived  => Craft::t('Archived')
+			//UserStatus::Archived  => Craft::t('Archived')
 		);
 	}
 
 	/**
-	 * Returns this element type's sources.
+	 * @inheritDoc IElementType::getSources()
 	 *
 	 * @param string|null $context
 	 *
@@ -80,23 +80,84 @@ class UserElementType extends BaseElementType
 
 		if (craft()->getEdition() == Craft::Pro)
 		{
-			foreach (craft()->userGroups->getAllGroups() as $group)
-			{
-				$key = 'group:'.$group->id;
+			// Admin source
+			$sources['admins'] = array(
+				'label' => Craft::t('Admins'),
+				'criteria' => array('admin' => true),
+				'hasThumbs' => true
+			);
 
-				$sources[$key] = array(
-					'label'     => Craft::t($group->name),
-					'criteria'  => array('groupId' => $group->id),
-					'hasThumbs' => true
-				);
+			$groups = craft()->userGroups->getAllGroups();
+
+			if ($groups)
+			{
+				$sources[] = array('heading' => Craft::t('Groups'));
+
+				foreach ($groups as $group)
+				{
+					$key = 'group:'.$group->id;
+
+					$sources[$key] = array(
+						'label'     => Craft::t($group->name),
+						'criteria'  => array('groupId' => $group->id),
+						'hasThumbs' => true
+					);
+				}
 			}
 		}
+
+		// Allow plugins to modify the sources
+		craft()->plugins->call('modifyUserSources', array(&$sources, $context));
 
 		return $sources;
 	}
 
 	/**
-	 * Defines which model attributes should be searchable.
+	 * @inheritDoc IElementType::getAvailableActions()
+	 *
+	 * @param string|null $source
+	 *
+	 * @return array|null
+	 */
+	public function getAvailableActions($source = null)
+	{
+		$actions = array();
+
+		// Edit
+		$editAction = craft()->elements->getAction('Edit');
+		$editAction->setParams(array(
+			'label' => Craft::t('Edit user'),
+		));
+		$actions[] = $editAction;
+
+		if (craft()->userSession->checkPermission('administrateUsers'))
+		{
+			// Suspend
+			$actions[] = 'SuspendUsers';
+
+			// Unsuspend
+			$actions[] = 'UnsuspendUsers';
+		}
+
+		if (craft()->userSession->checkPermission('deleteUsers'))
+		{
+			// Delete
+			$actions[] = 'DeleteUsers';
+		}
+
+		// Allow plugins to add additional actions
+		$allPluginActions = craft()->plugins->call('addUserActions', array($source), true);
+
+		foreach ($allPluginActions as $pluginActions)
+		{
+			$actions = array_merge($actions, $pluginActions);
+		}
+
+		return $actions;
+	}
+
+	/**
+	 * @inheritDoc IElementType::defineSearchableAttributes()
 	 *
 	 * @return array
 	 */
@@ -106,13 +167,11 @@ class UserElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns the attributes that can be shown/sorted by in table views.
-	 *
-	 * @param string|null $source
+	 * @inheritDoc IElementType::defineSortableAttributes()
 	 *
 	 * @return array
 	 */
-	public function defineTableAttributes($source = null)
+	public function defineSortableAttributes()
 	{
 		if (craft()->config->get('useEmailAsUsername'))
 		{
@@ -120,8 +179,9 @@ class UserElementType extends BaseElementType
 				'email'         => Craft::t('Email'),
 				'firstName'     => Craft::t('First Name'),
 				'lastName'      => Craft::t('Last Name'),
-				'dateCreated'   => Craft::t('Join Date'),
 				'lastLoginDate' => Craft::t('Last Login'),
+				'dateCreated'   => Craft::t('Date Created'),
+				'dateUpdated'   => Craft::t('Date Updated'),
 			);
 		}
 		else
@@ -131,16 +191,90 @@ class UserElementType extends BaseElementType
 				'firstName'     => Craft::t('First Name'),
 				'lastName'      => Craft::t('Last Name'),
 				'email'         => Craft::t('Email'),
-				'dateCreated'   => Craft::t('Join Date'),
 				'lastLoginDate' => Craft::t('Last Login'),
+				'dateCreated'   => Craft::t('Date Created'),
+				'dateUpdated'   => Craft::t('Date Updated'),
 			);
+		}
+
+		// Allow plugins to modify the attributes
+		craft()->plugins->call('modifyUserSortableAttributes', array(&$attributes));
+
+		return $attributes;
+	}
+
+	/**
+	 * @inheritDoc IElementType::defineAvailableTableAttributes()
+	 *
+	 * @return array
+	 */
+	public function defineAvailableTableAttributes()
+	{
+
+		if (craft()->config->get('useEmailAsUsername'))
+		{
+			// Start with Email and don't even give Username as an option
+			$attributes = array(
+				'email' => array('label' => Craft::t('Email')),
+			);
+		}
+		else
+		{
+			$attributes = array(
+				'username' => array('label' => Craft::t('Username')),
+				'email'    => array('label' => Craft::t('Email')),
+			);
+		}
+
+		$attributes['fullName'] = array('label' => Craft::t('Full Name'));
+		$attributes['firstName'] = array('label' => Craft::t('First Name'));
+		$attributes['lastName'] = array('label' => Craft::t('Last Name'));
+
+		if (craft()->isLocalized())
+		{
+			$attributes['preferredLocale'] = array('label' => Craft::t('Preferred Locale'));
+		}
+
+		$attributes['id']            = array('label' => Craft::t('ID'));
+		$attributes['dateCreated']   = array('label' => Craft::t('Join Date'));
+		$attributes['lastLoginDate'] = array('label' => Craft::t('Last Login'));
+		$attributes['dateCreated']   = array('label' => Craft::t('Date Created'));
+		$attributes['dateUpdated']   = array('label' => Craft::t('Date Updated'));
+
+		// Allow plugins to modify the attributes
+		$pluginAttributes = craft()->plugins->call('defineAdditionalUserTableAttributes', array(), true);
+
+		foreach ($pluginAttributes as $thisPluginAttributes)
+		{
+			$attributes = array_merge($attributes, $thisPluginAttributes);
 		}
 
 		return $attributes;
 	}
 
 	/**
-	 * Returns the table view HTML for a given attribute.
+	 * @inheritDoc IElementType::getDefaultTableAttributes()
+	 *
+	 * @param string|null $source
+	 *
+	 * @return array
+	 */
+	public function getDefaultTableAttributes($source = null)
+	{
+		if (craft()->config->get('useEmailAsUsername'))
+		{
+			$attributes = array('fullName', 'dateCreated', 'lastLoginDate');
+		}
+		else
+		{
+			$attributes = array('fullName', 'email', 'dateCreated', 'lastLoginDate');
+		}
+
+		return $attributes;
+	}
+
+	/**
+	 * @inheritDoc IElementType::getTableAttributeHtml()
 	 *
 	 * @param BaseElementModel $element
 	 * @param string           $attribute
@@ -149,6 +283,14 @@ class UserElementType extends BaseElementType
 	 */
 	public function getTableAttributeHtml(BaseElementModel $element, $attribute)
 	{
+		// First give plugins a chance to set this
+		$pluginAttributeHtml = craft()->plugins->callFirst('getUserTableAttributeHtml', array($element, $attribute), true);
+
+		if ($pluginAttributeHtml !== null)
+		{
+			return $pluginAttributeHtml;
+		}
+
 		switch ($attribute)
 		{
 			case 'email':
@@ -157,7 +299,7 @@ class UserElementType extends BaseElementType
 
 				if ($email)
 				{
-					return '<a href="mailto:'.$email.'">'.$email.'</a>';
+					return HtmlHelper::encodeParams('<a href="mailto:{email}">{email}</a>', array('email' => $email));
 				}
 				else
 				{
@@ -165,13 +307,15 @@ class UserElementType extends BaseElementType
 				}
 			}
 
-			case 'lastLoginDate':
+			case 'preferredLocale':
 			{
-				$date = $element->$attribute;
+				$localeId = $element->preferredLocale;
 
-				if ($date)
+				if ($localeId)
 				{
-					return $date->localeDate();
+					$locale = new LocaleModel($localeId);
+
+					return $locale->getName();
 				}
 				else
 				{
@@ -187,7 +331,7 @@ class UserElementType extends BaseElementType
 	}
 
 	/**
-	 * Defines any custom element criteria attributes for this element type.
+	 * @inheritDoc IElementType::defineCriteriaAttributes()
 	 *
 	 * @return array
 	 */
@@ -211,7 +355,7 @@ class UserElementType extends BaseElementType
 	}
 
 	/**
-	 * Returns the element query condition for a custom status criteria.
+	 * @inheritDoc IElementType::getElementQueryStatusCondition()
 	 *
 	 * @param DbCommand $query
 	 * @param string    $status
@@ -220,11 +364,37 @@ class UserElementType extends BaseElementType
 	 */
 	public function getElementQueryStatusCondition(DbCommand $query, $status)
 	{
-		return 'users.status = "'.$status.'"';
+		switch ($status)
+		{
+			case UserStatus::Active:
+			{
+				return 'users.archived = 0 AND users.suspended = 0 AND users.locked = 0 and users.pending = 0';
+			}
+
+			case UserStatus::Pending:
+			{
+				return 'users.pending = 1';
+			}
+
+			case UserStatus::Locked:
+			{
+				return 'users.locked = 1';
+			}
+
+			case UserStatus::Suspended:
+			{
+				return 'users.suspended = 1';
+			}
+
+			case UserStatus::Archived:
+			{
+				return 'users.archived = 1';
+			}
+		}
 	}
 
 	/**
-	 * Modifies an element query targeting elements of this type.
+	 * @inheritDoc IElementType::modifyElementsQuery()
 	 *
 	 * @param DbCommand            $query
 	 * @param ElementCriteriaModel $criteria
@@ -234,7 +404,7 @@ class UserElementType extends BaseElementType
 	public function modifyElementsQuery(DbCommand $query, ElementCriteriaModel $criteria)
 	{
 		$query
-			->addSelect('users.username, users.photo, users.firstName, users.lastName, users.email, users.admin, users.client, users.status, users.lastLoginDate, users.lockoutDate, users.preferredLocale')
+			->addSelect('users.username, users.photo, users.firstName, users.lastName, users.email, users.admin, users.client, users.locked, users.pending, users.suspended, users.archived, users.lastLoginDate, users.lockoutDate, users.preferredLocale')
 			->join('users users', 'users.id = elements.id');
 
 		if ($criteria->admin)
@@ -247,7 +417,7 @@ class UserElementType extends BaseElementType
 			$query->andWhere(DbHelper::parseParam('users.client', $criteria->client, $query->params));
 		}
 
-		if ($criteria->can)
+		if ($criteria->can && craft()->getEdition() == Craft::Pro)
 		{
 			// Get the actual permission ID
 			if (is_numeric($criteria->can))
@@ -295,7 +465,7 @@ class UserElementType extends BaseElementType
 
 			if ($permittedUserIds)
 			{
-				$permissionConditions = array('or', 'users.admin = 1', DbHelper::parseParam('elements.id', $permittedUserIds, $query->params));
+				$permissionConditions = array('or', 'users.admin = 1', array('in', 'elements.id', $permittedUserIds));
 			}
 			else
 			{
@@ -314,9 +484,7 @@ class UserElementType extends BaseElementType
 				return false;
 			}
 
-			// TODO: MySQL specific. Manually building the string because DbHelper::parseParam() chokes with large
-			// arrays.
-			$query->andWhere('elements.id IN ('.implode(',', $userIds).')');
+			$query->andWhere(array('in', 'elements.id', $userIds));
 		}
 
 		if ($criteria->group)
@@ -329,16 +497,21 @@ class UserElementType extends BaseElementType
 			$groupIdsQuery->where(DbHelper::parseParam('handle', $criteria->group, $groupIdsQuery->params));
 			$groupIds = $groupIdsQuery->queryColumn();
 
+			// In the case where the group doesn't exist.
+			if (!$groupIds)
+			{
+				return false;
+			}
+
 			$userIds = $this->_getUserIdsByGroupIds($groupIds);
 
+			// In case there are no users in the groups.
 			if (!$userIds)
 			{
 				return false;
 			}
 
-			// TODO: MySQL specific. Manually building the string because DbHelper::parseParam() chokes with large
-			// arrays.
-			$query->andWhere('elements.id IN ('.implode(',', $userIds).')');
+			$query->andWhere(array('in', 'elements.id', $userIds));
 		}
 
 		if ($criteria->username)
@@ -373,7 +546,7 @@ class UserElementType extends BaseElementType
 	}
 
 	/**
-	 * Populates an element model based on a query result.
+	 * @inheritDoc IElementType::populateElementModel()
 	 *
 	 * @param array $row
 	 *
@@ -382,6 +555,51 @@ class UserElementType extends BaseElementType
 	public function populateElementModel($row)
 	{
 		return UserModel::populateModel($row);
+	}
+
+	/**
+	 * @inheritDoc IElementType::getEditorHtml()
+	 *
+	 * @param BaseElementModel $element
+	 *
+	 * @return string
+	 */
+	public function getEditorHtml(BaseElementModel $element)
+	{
+		$html = craft()->templates->render('users/_accountfields', array(
+			'account'      => $element,
+			'isNewAccount' => false,
+			'meta'         => true,
+		));
+
+		$html .= parent::getEditorHtml($element);
+
+		return $html;
+	}
+
+	/**
+	 * @inheritdoc BaseElementType::saveElement()
+	 *
+	 * @return bool
+	 */
+	public function saveElement(BaseElementModel $element, $params)
+	{
+		if (isset($params['username']))
+		{
+			$element->username = $params['username'];
+		}
+
+		if (isset($params['firstName']))
+		{
+			$element->firstName = $params['firstName'];
+		}
+
+		if (isset($params['lastName']))
+		{
+			$element->lastName = $params['lastName'];
+		}
+
+		return craft()->users->saveUser($element);
 	}
 
 	// Private Methods
