@@ -2,20 +2,20 @@
 namespace Craft;
 
 /**
- * Craft by Pixel & Tonic
+ * The AssetElementType class is responsible for implementing and defining assets as a native element type in Craft.
  *
- * @package   Craft
- * @author    Pixel & Tonic, Inc.
+ * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
  * @license   http://buildwithcraft.com/license Craft License Agreement
- * @link      http://buildwithcraft.com
- */
-
-/**
- * Asset element type
+ * @see       http://buildwithcraft.com
+ * @package   craft.app.elementtypes
+ * @since     1.0
  */
 class AssetElementType extends BaseElementType
 {
+	// Public Methods
+	// =========================================================================
+
 	/**
 	 * Returns the element type name.
 	 *
@@ -60,6 +60,7 @@ class AssetElementType extends BaseElementType
 	 * Returns this element type's sources.
 	 *
 	 * @param string|null $context
+	 *
 	 * @return array|false
 	 */
 	public function getSources($context = null)
@@ -81,8 +82,9 @@ class AssetElementType extends BaseElementType
 	/**
 	 * Returns a source by its key and context.
 	 *
-	 * @param string $key
+	 * @param string      $key
 	 * @param string|null $context
+	 *
 	 * @return array|null
 	 */
 	public function getSource($key, $context = null)
@@ -114,6 +116,7 @@ class AssetElementType extends BaseElementType
 	 * Returns the attributes that can be shown/sorted by in table views.
 	 *
 	 * @param string|null $source
+	 *
 	 * @return array
 	 */
 	public function defineTableAttributes($source = null)
@@ -130,7 +133,8 @@ class AssetElementType extends BaseElementType
 	 * Returns the table view HTML for a given attribute.
 	 *
 	 * @param BaseElementModel $element
-	 * @param string $attribute
+	 * @param string           $attribute
+	 *
 	 * @return string
 	 */
 	public function getTableAttributeHtml(BaseElementModel $element, $attribute)
@@ -197,8 +201,9 @@ class AssetElementType extends BaseElementType
 	/**
 	 * Modifies an element query targeting elements of this type.
 	 *
-	 * @param DbCommand $query
+	 * @param DbCommand            $query
 	 * @param ElementCriteriaModel $criteria
+	 *
 	 * @return mixed
 	 */
 	public function modifyElementsQuery(DbCommand $query, ElementCriteriaModel $criteria)
@@ -255,6 +260,7 @@ class AssetElementType extends BaseElementType
 	 * Populates an element model based on a query result.
 	 *
 	 * @param array $row
+	 *
 	 * @return array
 	 */
 	public function populateElementModel($row)
@@ -266,6 +272,7 @@ class AssetElementType extends BaseElementType
 	 * Returns the HTML for an editor HUD for the given element.
 	 *
 	 * @param BaseElementModel $element
+	 *
 	 * @return string
 	 */
 	public function getEditorHtml(BaseElementModel $element)
@@ -302,7 +309,8 @@ class AssetElementType extends BaseElementType
 	 * Save the filename.
 	 *
 	 * @param BaseElementModel $element
-	 * @param array $params
+	 * @param array            $params
+	 *
 	 * @return bool
 	 */
 	public function saveElement(BaseElementModel $element, $params)
@@ -351,12 +359,15 @@ class AssetElementType extends BaseElementType
 		return $success;
 	}
 
+	// Private Methods
+	// =========================================================================
+
 	/**
 	 * Transforms an asset folder tree into a source list.
 	 *
-	 * @access private
 	 * @param array $folders
 	 * @param bool  $includeNestedFolders
+	 *
 	 * @return array
 	 */
 	private function _assembleSourceList($folders, $includeNestedFolders = true)
@@ -374,9 +385,9 @@ class AssetElementType extends BaseElementType
 	/**
 	 * Transforms an AssetFolderModel into a source info array.
 	 *
-	 * @access private
 	 * @param AssetFolderModel $folder
-	 * @param bool $includeNestedFolders
+	 * @param bool             $includeNestedFolders
+	 *
 	 * @return array
 	 */
 	private function _assembleSourceInfoForFolder(AssetFolderModel $folder, $includeNestedFolders = true)

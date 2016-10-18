@@ -2,20 +2,23 @@
 namespace Craft;
 
 /**
- * Craft by Pixel & Tonic
+ * Field record class.
  *
- * @package   Craft
- * @author    Pixel & Tonic, Inc.
+ * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
  * @license   http://buildwithcraft.com/license Craft License Agreement
- * @link      http://buildwithcraft.com
- */
-
-/**
- * Field record class
+ * @see       http://buildwithcraft.com
+ * @package   craft.app.records
+ * @since     1.0
  */
 class FieldRecord extends BaseRecord
 {
+	// Properties
+	// =========================================================================
+
+	/**
+	 * @var array
+	 */
 	protected $reservedHandleWords = array(
 		'archived',
 		'author',
@@ -48,10 +51,18 @@ class FieldRecord extends BaseRecord
 		'title',
 	);
 
+	/**
+	 * @var
+	 */
 	private $_oldHandle;
 
+	// Public Methods
+	// =========================================================================
+
 	/**
-	 * Init
+	 * Initializes the application component.
+	 *
+	 * @return null
 	 */
 	public function init()
 	{
@@ -63,6 +74,8 @@ class FieldRecord extends BaseRecord
 
 	/**
 	 * Store the old handle.
+	 *
+	 * @return null
 	 */
 	public function storeOldHandle()
 	{
@@ -85,23 +98,6 @@ class FieldRecord extends BaseRecord
 	public function getTableName()
 	{
 		return 'fields';
-	}
-
-	/**
-	 * @access protected
-	 * @return array
-	 */
-	protected function defineAttributes()
-	{
-		return array(
-			'name'         => array(AttributeType::Name, 'required' => true),
-			'handle'       => array(AttributeType::Handle, 'required' => true, 'reservedWords' => $this->reservedHandleWords),
-			'context'      => array(AttributeType::String, 'default' => 'global', 'required' => true),
-			'instructions' => array(AttributeType::String, 'column' => ColumnType::Text),
-			'translatable' => AttributeType::Bool,
-			'type'         => array(AttributeType::ClassName, 'required' => true),
-			'settings'     => AttributeType::Mixed,
-		);
 	}
 
 	/**
@@ -144,9 +140,29 @@ class FieldRecord extends BaseRecord
 	{
 		$attributeConfigs = parent::getAttributeConfigs();
 
-		// Field handles must be <= 58 chars so that with "field_" prepended, they're <= 64 chars (MySQL's column name limit).
+		// Field handles must be <= 58 chars so that with "field_" prepended, they're <= 64 chars (MySQL's column
+		// name limit).
 		$attributeConfigs['handle']['maxLength'] = 64 - strlen(craft()->content->fieldColumnPrefix);
 
 		return $attributeConfigs;
+	}
+
+	// Protected Methods
+	// =========================================================================
+
+	/**
+	 * @return array
+	 */
+	protected function defineAttributes()
+	{
+		return array(
+			'name'         => array(AttributeType::Name, 'required' => true),
+			'handle'       => array(AttributeType::Handle, 'required' => true, 'reservedWords' => $this->reservedHandleWords),
+			'context'      => array(AttributeType::String, 'default' => 'global', 'required' => true),
+			'instructions' => array(AttributeType::String, 'column' => ColumnType::Text),
+			'translatable' => AttributeType::Bool,
+			'type'         => array(AttributeType::ClassName, 'required' => true),
+			'settings'     => AttributeType::Mixed,
+		);
 	}
 }

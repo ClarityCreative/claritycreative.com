@@ -2,25 +2,25 @@
 namespace Craft;
 
 /**
- * Craft by Pixel & Tonic
+ * Class UrlHelper
  *
- * @package   Craft
- * @author    Pixel & Tonic, Inc.
+ * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
  * @license   http://buildwithcraft.com/license Craft License Agreement
- * @link      http://buildwithcraft.com
- */
-
-/**
- *
+ * @see       http://buildwithcraft.com
+ * @package   craft.app.helpers
+ * @since     1.0
  */
 class UrlHelper
 {
+	// Public Methods
+	// =========================================================================
+
 	/**
 	 * Returns whether a given string appears to be an absolute URL.
 	 *
-	 * @static
 	 * @param string $url
+	 *
 	 * @return bool
 	 */
 	public static function isAbsoluteUrl($url)
@@ -31,8 +31,8 @@ class UrlHelper
 	/**
 	 * Returns whether a given string appears to be a protocol-relative URL.
 	 *
-	 * @static
 	 * @param string $url
+	 *
 	 * @return bool
 	 */
 	public static function isProtocolRelativeUrl($url)
@@ -43,8 +43,8 @@ class UrlHelper
 	/**
 	 * Returns whether a given string appears to be a root-relative URL.
 	 *
-	 * @static
 	 * @param string $url
+	 *
 	 * @return bool
 	 */
 	public static function isRootRelativeUrl($url)
@@ -55,8 +55,8 @@ class UrlHelper
 	/**
 	 * Returns whether a given string appears to be a "full" URL (absolute or root-relative).
 	 *
-	 * @static
 	 * @param string $url
+	 *
 	 * @return bool
 	 */
 	public static function isFullUrl($url)
@@ -67,9 +67,9 @@ class UrlHelper
 	/**
 	 * Returns a URL with additional query string parameters.
 	 *
-	 * @static
-	 * @param string $url
+	 * @param string       $url
 	 * @param array|string $params
+	 *
 	 * @return string
 	 */
 	public static function getUrlWithParams($url, $params)
@@ -101,9 +101,9 @@ class UrlHelper
 	/**
 	 * Returns a URL with a 'token' query string param set to a given token.
 	 *
-	 * @static
 	 * @param string $url
 	 * @param string $token
+	 *
 	 * @return string
 	 */
 	public static function getUrlWithToken($url, $token)
@@ -116,9 +116,9 @@ class UrlHelper
 	/**
 	 * Returns a URL with a specific protocol.
 	 *
-	 * @static
 	 * @param string $url
 	 * @param string $protocol
+	 *
 	 * @return string
 	 */
 	public static function getUrlWithProtocol($url, $protocol)
@@ -145,11 +145,11 @@ class UrlHelper
 	/**
 	 * Returns either a CP or a site URL, depending on the request type.
 	 *
-	 * @static
 	 * @param string            $path
 	 * @param array|string|null $params
 	 * @param string|null       $protocol
 	 * @param bool              $mustShowScriptName
+	 *
 	 * @return string
 	 */
 	public static function getUrl($path = '', $params = null, $protocol = '', $mustShowScriptName = false)
@@ -194,10 +194,10 @@ class UrlHelper
 	/**
 	 * Returns a CP URL.
 	 *
-	 * @static
-	 * @param string $path
+	 * @param string            $path
 	 * @param array|string|null $params
-	 * @param string|null $protocol
+	 * @param string|null       $protocol
+	 *
 	 * @return string
 	 */
 	public static function getCpUrl($path = '', $params = null, $protocol = '')
@@ -211,7 +211,6 @@ class UrlHelper
 	/**
 	 * Returns a site URL.
 	 *
-	 * @static
 	 * @param string $path
 	 * @param array|string|null $params
 	 * @param string|null $protocol
@@ -226,10 +225,11 @@ class UrlHelper
 	/**
 	 * Returns a resource URL.
 	 *
-	 * @static
-	 * @param string $path
+	 * @param string            $path
 	 * @param array|string|null $params
-	 * @param string|null $protocol protocol to use (e.g. http, https). If empty, the protocol used for the current request will be used.
+	 * @param string|null       $protocol The protocol to use (e.g. http, https). If empty, the protocol used for the
+	 *                                    current request will be used.
+	 *
 	 * @return string
 	 */
 	public static function getResourceUrl($path = '', $params = null, $protocol = '')
@@ -238,8 +238,9 @@ class UrlHelper
 
 		if ($path)
 		{
-			// If we've served this resource before, we should have a cached copy of the server path already.
-			// Use that to get its timestamp, and add timestamp to the resource URL so ResourcesService sends it with a Pragma: Cache header.
+			// If we've served this resource before, we should have a cached copy of the server path already. Use that
+			// to get its timestamp, and add timestamp to the resource URL so ResourcesService sends it with
+			// a Pragma: Cache header.
 
 			$realPath = craft()->resources->getCachedResourcePath($path);
 
@@ -260,22 +261,26 @@ class UrlHelper
 	}
 
 	/**
-	 * @static
 	 * @param string $path
 	 * @param null   $params
-	 * @param string $protocol protocol to use (e.g. http, https). If empty, the protocol used for the current request will be used.
+	 * @param string $protocol The protocol to use (e.g. http, https). If empty, the protocol used for the current
+	 *                         request will be used.
+	 *
 	 * @return array|string
 	 */
 	public static function getActionUrl($path = '', $params = null, $protocol = '')
 	{
 		$path = craft()->config->get('actionTrigger').'/'.trim($path, '/');
+
 		return static::getUrl($path, $params, $protocol, true);
 	}
+
+	// Private Methods
+	// =========================================================================
 
 	/**
 	 * Returns a URL.
 	 *
-	 * @access private
 	 * @param string       $path
 	 * @param array|string $params
 	 * @param              $protocol
@@ -388,8 +393,6 @@ class UrlHelper
 	/**
 	 * Normalizes query string params.
 	 *
-	 * @static
-	 * @access private
 	 * @param string|array|null $params
 	 * @param string|null       &$anchor
 	 * @return string
