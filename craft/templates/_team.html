@@ -1,0 +1,35 @@
+{% extends "_layout" %}
+
+
+{% block content %}
+<section class="project-banner banner_sizing">
+	<div class="container cf">
+		<div class="grid_full">
+		{%if entry.heroImage | length %}
+		<img src="{% for asset in entry.heroImage %}{{ asset.url }}{% endfor %}" alt="" />
+		{% endif %}
+	</div>
+	</div>
+<section>
+	<div class="container cf">
+		<div class="grid_full">
+
+				<h1>{{entry.title}}</h1>
+				<h2>{{entry.role}}</h2>
+				<ul class="social">
+					{% if entry.twitter %}<li><a href="http://twitter.com/{{entry.twitter}}" class="ss-icon ss-social-regular">Twitter</a></li>{% endif%}
+					{% if entry.facebook %}<li><a href="http://facebook.com/{{entry.facebook}}" class="ss-icon ss-social-regular">Facebook</a></li>{% endif %}
+					{% if entry.instagram %}<li><a href="http://instagram.com/{{entry.instagram}}" class="ss-icon ss-social-regular">Instagram</a></li>{% endif %}
+					{% if entry.linkedin %}<li><a href="http://linkedin.com/{{entry.linkedin}}" class="ss-icon ss-social-regular">Linkedin</a></li>{% endif %}
+					{% if entry.website %}<li><a href="#" class="ss-icon ss-standard">Globe</a></li>{% endif %}
+				</ul>
+				<div class="clear"></div>
+			<div class="project-info">
+				<h5>Biography</h5>
+				{{entry.bio}}
+			</div>
+		</div>
+	</div>
+</section>
+
+{% endblock %}

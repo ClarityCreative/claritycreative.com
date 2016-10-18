@@ -1,0 +1,33 @@
+{% extends "_layout" %}
+
+
+{% block content %}
+
+<section class="banner_sizing bg_white down_arrow">
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-title">
+				<h1>Client Access</h1>
+				<hr class="short">
+				<h3>Do you want to know a secret?</h3>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="bg_gray">
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-form">
+				<h5 class="is_hidden">Enter Password</h5>
+				<form method="post" action="">
+					<input type="hidden" name="action" value="SetCookie/Set/SetIt">
+					<input type="password" name="password" placeholder="Password">
+					<input id="send" type="submit" value="Let me in!">
+				</form>
+			</div>
+		</div>
+	</div>
+</section>
+
+{% endblock %}

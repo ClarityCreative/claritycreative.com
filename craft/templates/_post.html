@@ -1,0 +1,35 @@
+{% extends "_layout" %}
+
+
+{% block content %}
+
+<section class="title-banner banner_sizing img_overlay" style="background-image: {%if entry.heroImage | length %}{% for asset in entry.heroImage %}url({{ asset.url }}){% endfor %}{% else %}url('/img/post.jpg'){% endif %};">
+	<div class="block">
+		<div class="container cf">
+			<div class="grid_full">
+				<div class="post-title">
+					<h1>{{entry.title}}</h1>
+					<div class="post-info">
+						{% for auth in entry.authorImage %}
+						<span class="authImg" style="background-image:{% for asset in auth.teamPhoto %}url({{ asset.url }}){% endfor %}; "></span><span>{{auth.title}}</span>
+						{% endfor %}
+						<span>{{ entry.postDate|date("M d, Y") }}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section>
+	<div class="container cf">
+		<div class="grid_full">
+			<article>
+				{{entry.body}}
+			</article>
+			<hr class="short">
+		</div>
+	</div>
+</section>
+
+{% endblock %}

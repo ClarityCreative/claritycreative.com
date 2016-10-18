@@ -1,0 +1,195 @@
+{% extends "_layout" %}
+{% set image  = clarityMatters.heroImage.first() %}
+{% set imgOne = clarityIn3dFirst.workImage.first() %}
+{% set imgTwo = clarityIn3dSecond.workImage.first() %}
+{% set imgThree = clarityIn3dThird.workImage.first() %}
+
+{% set teamers = craft.entries.section('team').ids() %}
+{% set teamCount = teamers|length %}
+
+{% block content %}
+
+<section class="title-banner banner_sizing img_overlay" style="background-image: {% if image.url %}url({{image.url}}){% else %}url('/img/about.jpg'){% endif %};">
+	<div class="block block-transparent">
+		<div class="container cf">
+			<div class="grid_full">
+				<div class="page-title page-title-widened">
+					<h1>About</h1>
+					<hr class="short">
+					<h3>{{clarityMatters.heading}}</h3>
+					<h4>{{clarityMatters.body}}</h4>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="banner_sizing">
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-title">
+				<h1>Clarity in 3D</h1>
+				<hr class="short">
+				<h3>Develop. Design. Deliver.</h3>
+			</div>
+			<ul class="approach-items">
+	<li class="cf">
+	<span class="icon left"><img src="{{imgOne.url}}" alt=""></span>
+	<p class="copy">
+	</p>
+	<h2>{{clarityIn3dFirst.heading}}</h2>
+			{{clarityIn3dFirst.body}}
+	</li>
+	<li class="cf">
+	<span class="icon right"><img src="{{imgTwo.url}}" alt=""></span>
+	<p class="copy">
+	</p>
+	<h2>{{clarityIn3dSecond.heading}}</h2>
+			{{clarityIn3dSecond.body}}
+	</li>
+	<li class="cf">
+	<span class="icon left third"><img src="{{imgThree.url}}" alt=""></span>
+	<p class="copy">
+	</p>
+	<h2>{{clarityIn3dThird.heading}}</h2>
+			{{clarityIn3dThird.body}}
+	</li>
+</ul>
+		</div>
+	</div>
+</section>
+
+<section class="bg_white">
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-title">
+				<h1>Capabilities</h1>
+				<hr class="short">
+				<h3>Communicating with clarity</h3>
+			</div>
+			<div class="grid-items">
+				<ul class="ji_b about-comm">
+					<li style="background-image: url(/img/icons/storyboards.svg)">
+						<span>Storyboarding</span>
+					</li>
+					<li style="background-image: url(/img/icons/video_production.svg)">
+						<span>Video Production</span>
+					</li>
+					<li style="background-image: url(/img/icons/brainstorming.svg)">
+						<span>Brainstorming</span>
+					</li>
+					<li style="background: url(/img/icons/scriptwriting.svg)">
+						<span>Scriptwriting</span>
+					</li>
+				</ul>
+				<ul class="ji_b about-comm">
+					<li style="background-image: url(/img/icons/keynotes.svg)">
+						<span>Keynotes</span>
+					</li>
+					<li style="background-image: url(/img/icons/animation.svg)">
+						<span>Animation</span>
+					</li>
+					<li style="background-image: url(/img/icons/photography.svg)">
+						<span>Photography</span>
+					</li>
+					<li style="background-image: url(/img/icons/strategy.svg)">
+						<span>Strategy</span>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section>
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-title page-title-sub">
+				<h1>Message Clarifier Treatment System™</h1>
+				<hr class="short">
+				<h3>Every project we take on goes through our patented Message Clarifier Treatment System™  to ensure the most powerful and effective message design possible.</h3>
+			</div>
+			<img id="machine" src="/img/clarifyMachine.png" alt="" />
+		</div>
+	</div>
+</section>
+
+<section class="bg_white" id="team">
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-title">
+				<h1>Team</h1>
+				<hr class="short">
+			</div>
+			<div class="grid-items grid-items-sub dn_at_n720">
+				{% set counter = 0 %}
+				{% for entry in craft.entries.section('team')%}
+					{%if counter in [0,1,2] %}
+					{%if counter == 0%}
+						 {%if loop.revindex < 3 %}
+						 	<ul class="ji_b only_{{loop.revindex}}">
+						 {%else%}
+						 <ul class="ji_b narrower">
+						{%endif%}
+					{%endif%}
+				<li style="background-image:url({% for asset in entry.teamPhoto %}{{ asset.url }}{% endfor %}); background-size:cover; background-position:center center;">
+					<h5><a href="{{entry.url}}">{{entry.title}}</a></h5>
+					<small>{{entry.role}}</small>
+				</li>
+					{%if counter == 2%} </ul> {%endif%}
+					{%elseif counter in [3,4,5,6]%}
+					{%if counter == 3%}
+						 {%if loop.revindex < 4%}
+							<ul class="ji_b only_{{loop.revindex}}">
+						 {%else%}
+						 	<ul class="ji_b">
+						{%endif%}
+					{%endif%}
+						<li style="background-image:url({% for asset in entry.teamPhoto %}{{ asset.url }}{% endfor %}); background-size:cover; background-position:center center;">
+						<h5><a href="{{entry.url}}">{{entry.title}}</a></h5>
+						<small>{{entry.role}}</small>
+						</li>	
+					{%endif%}
+					{%if counter == 6%}
+						{%set counter = 0%}
+						</ul>
+					{%elseif loop.last%}
+						</ul>
+					{%else%}
+						{%set counter = counter + 1%}
+					{%endif%}
+				{% endfor %}
+			</div>
+			<div class="grid-items grid-items-sub dn_at_w720">
+			 	<ul class="ji_b">
+				{% for entry in craft.entries.section('team')%}
+					<li style="background-image:url({% for asset in entry.teamPhoto %}{{ asset.url }}{% endfor %}); background-size:cover; background-position:center center;">
+						<h5><a href="{{entry.url}}">{{entry.title}}</a></h5>
+						<small>{{entry.role}}</small>
+					</li>
+				{% endfor %}
+				</ul>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="title-banner title-banner-bottom banner_sizing img_overlay" style="background-image: url('/img/post.jpg');">
+	<div class="block">
+		<div class="container cf">
+			<div class="grid_full">
+				<div class="page-title">
+					<h1>Ideas</h1>
+					<hr class="short">
+					<h3>{{ideasHeader.heading}}</h3>
+					<a href="/ideas/" class="btn">Ideas</a>
+					<h4>{{ideasHeader.body}}</h4>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+
+
+{% endblock %}

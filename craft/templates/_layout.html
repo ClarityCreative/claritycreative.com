@@ -1,0 +1,167 @@
+<!DOCTYPE HTML>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<title>Clarity Creative</title>
+	<link rel="shortcut icon" type="image/ico" href="/favicon.ico" />
+	<link href="/webfonts/ss-social-regular.css" rel="stylesheet" />
+	<link href="/webfonts/ss-standard.css" rel="stylesheet" />
+	<link rel="stylesheet" href="/c/style.css">
+	<link rel="stylesheet" type="text/css" href="//cloud.typography.com/6349312/767324/css/fonts.css" />
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+</head>
+
+{% if craft.request.getSegment(1) == "" %}
+<body class="home">
+{% else %}
+<body class="{{ craft.request.getSegment(1) }}">
+{% endif %}
+
+
+	<header>
+		<div class="container cf padded">
+			<div class="grid_full">
+				<a href="/" class="logo" title="Logo"></a>
+
+				<!-- Link to open menu dropdown (for narrow views) -->
+				<div class="menu-link">
+					<a href="#menu">Menu</a>
+				</div>
+
+				<ul class="main-nav">
+					<li><a class="work-item" href="/work/">Work</a></li>
+					<li><a class="about-item" href="/about/">About</a></li>
+					<li><a class="ideas-item" href="/ideas/">Ideas</a></li>
+					<li><a class="contact-item" href="/contact/">Contact</a></li>
+					<li><a class="client-access-item lock" href="/client-access/">Client Access</a></li>
+				</ul>
+			</div>
+		</div>
+	</header>
+
+	{% block content %}
+
+	<section class="page-message banner_sizing">
+		<div class="container cf">
+			<div class="grid_full">
+				<h3>This page has no content</h3>
+			</div>
+		</div>
+	</section>
+
+	{% endblock %}
+
+	<footer>
+		<div class="container cf">
+			<div class="grid_full">
+				<p>&copy;{{ now.year }} Clarity Creative Group</p>
+			</div>
+		</div>
+	</footer>
+
+	<!-- Menu dropdown (for narrow views) -->
+	<script>
+		$(document).ready(function() {
+			$('.menu-link a').click(function(e) {
+				$('.main-nav').toggleClass('dropdown');
+				e.preventDefault();
+			});
+		});
+	</script>
+
+	<!-- Adds hover effect to all links in a group -->
+	<script type="text/javascript">
+		$('.grouped_links a').hover(
+			function(){ $(this).closest('.grouped_links').addClass('phover') },
+			function(){ $(this).closest('.grouped_links').removeClass('phover') }
+		);
+	</script>
+
+	<script type="text/javascript">
+		$(document).ready(function() {
+			$('a[href^="#"]').click(function(event) {
+				var id = $(this).attr("href");
+				var offset = 0;
+				var target = $(id).offset().top - offset;
+				$('html, body').animate({scrollTop:target}, 450);
+				event.preventDefault();
+			});
+		});
+	</script>
+	<script type="text/javascript">
+		(function ($) {
+
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			// Copyright 2013, Brian Bravo	
+			// Licensed under the MIT license.
+			//
+			// @author Brian Bravo
+			// @desc determines if an HTML element is inside of the viewport (vertical-only)
+			// 
+			// github: https://github.com/BrianBravo/isInViewport	
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			 
+		    $.fn.isInViewport = function(options) {
+		    
+		    	//set default options
+		    	var settings = $.extend ({
+			    	mode: 'middle',			//[optional] 	determines if calculation is made from the top, middle, or bottom or HTML element
+			    	verticalOffset: 0		//[optional]	adds a buffer to HTML element
+		    	}, options );    	
+		    	
+		       	var windowHeight = $(window).height(),
+			   		windowScrollTop = $(window).scrollTop(),
+			   		elOffset = settings.verticalOffset;
+			   	
+			   	switch (settings.mode)
+			   	{
+				   	case 'bottom': /* bottom of HTML element is in viewport */
+				   		elOffset += this.offset().top + this.outerHeight();
+				   		break;
+				   	case 'middle': /* middle of HTML element is in viewport */
+				   		elOffset += this.offset().top + this.outerHeight()/2;
+				   		break;
+				   	case 'top':	   /* top of HTML element is in viewport */
+				   	default:
+				   		elOffset += this.offset().top;
+				   		break;
+			   	}
+		       
+			   	return ((elOffset - windowScrollTop) <= windowHeight);
+		    };
+		 
+		}( jQuery ));
+
+
+		$(window).scroll(function () {
+			var el = $('.the_spot');
+			if (el.isInViewport({
+					verticalOffset: 175
+				}))
+				$('body').addClass('far_enough');
+			else
+				$('body').removeClass('far_enough');
+		});
+	</script>
+
+<!-- Google Analytics -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-54520948-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+</body>
+
+</html>

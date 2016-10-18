@@ -1,0 +1,64 @@
+{% extends "_layout" %}
+{% set image  = ideasHeader.heroImage.first() %}
+
+{% block content %}
+
+<section class="title-banner banner_sizing img_overlay" style="background-image: {% if image.url %}url({{image.url}}){% else %}url('/img/post.jpg'){% endif %};">
+	<a>
+		<div class="container cf">
+			<div class="grid_full">
+				<div class="page-title">
+					<h1>Ideas</h1>
+					<hr class="short">
+					<h3>{{ideasHeader.heading}}</h3>
+					<h4>{{ideasHeader.body}}</h4>
+				</div>
+			</div>
+		</div>
+	</a>
+</section>
+
+<section>
+	<ul class="posts-feed">
+		{% for entry in craft.entries.section('ideas').featured('1').limit(1) %}
+		<li>
+			<div class="container cf">
+				<div class="grid_full grouped_links">
+					<h2><a href="{{entry.url}}">{{entry.title}}</a></h2>
+					<hr class="short">
+					<p>
+						{{entry.shortDescription}}
+					</p>
+					<h4><a href="{{entry.url}}">Read more</a></h4>
+					<div class="post-info">
+						{% for auth in entry.authorImage %}
+						<span class="authImg" style="background-image:{% for asset in auth.teamPhoto %}url({{ asset.url }}){% endfor %};"></span><span>{{ auth.title }}</span>
+						{% endfor %}
+						<span>{{ entry.postDate|date("M d, Y") }}</span>
+					</div>
+				</div>
+			</div>
+		</li>
+	{% endfor %}
+		{% for entry in craft.entries.section('ideas').featured('not 1') %}
+		<li>
+			<div class="container cf">
+				<div class="grid_full grouped_links">
+					<h2><a href="{{entry.url}}">{{entry.title}}</a></h2>
+					<hr class="short">
+					<p>
+						{{entry.shortDescription}}
+					</p>
+					<h4><a href="{{entry.url}}">Read more</a></h4>
+					<div class="post-info">
+						<span><span></span>{{ entry.author }}</span>
+						<span>{{ entry.postDate|date("M d, Y") }}</span>
+					</div>
+				</div>
+			</div>
+		</li>
+	{% endfor %}
+	</ul>
+</section>
+
+{% endblock %}

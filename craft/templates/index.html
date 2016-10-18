@@ -1,0 +1,80 @@
+{% extends "_layout" %}
+
+
+{% block content %}
+
+{% paginate craft.entries.section('work').limit(1).private('not 1').superHero('1') as entries %}
+{% for entry in entries %}
+<div class="the_spot"></div>
+<section class="hero-section banner_sizing img_overlay" style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="hero">
+				<div class="message">
+					{{homeHeader.body}}
+				</div>
+				<div class="va_b">
+					<a href="{{entry.url}}?play=true" class="btn">play &#9656;</a>
+				</div>
+				<div class="scroller">
+					<a href="#next">▾</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+{% endfor %}
+{% endpaginate %}
+
+<section class="tag-line banner_sizing">
+	<div id="next"></div>
+	<div class="container cf">
+		<div class="grid_full">
+			<h3><span class="il_b">Insightful <strong>Strategy</strong>&ensp;</span><br class="dn_at_w565"><span class="il_b">+ Incite-ful <strong>Creative</strong>&ensp;</span><br class="dn_at_w565"><span class="il_b">= Clarity</span></h3>
+			<h3>We make stories move</h3>
+		</div>
+	</div>
+</section>
+
+<section class="recent">
+	<div class="container">
+		<div class="title cf">
+			<div class="grid_full">
+				<h4>Recent Work</h4>
+				<hr class="short">
+			</div>
+		</div>
+		<div class="work">
+			{% paginate craft.entries.section('work').limit(3).private('not 1').superHero('not 1').featured('1') as entries %}
+			<ul class="info-blocks info-blocks-advanced-effect cf">
+				{% for entry in entries %}
+				<li class="grid_4">
+					<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+						<a href="{{ entry.url }}">
+						</a>
+						<div>
+							<h5>{{ entry.title }}</h5>
+							<p>{{entry.shortDescription}}</p>
+						</div>
+					</div>
+				</li>
+				{% endfor %}
+			</ul>
+			{% endpaginate %}
+		</div>
+	</div>
+</section>
+
+<section class="about-section banner_sizing img_overlay" style="background-image: url('/img/about.jpg');">
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="about-info">
+				<h3>{{clarityMatters.heading}}</h3>
+				{{clarityMatters.body}}
+				<a href="/about/" class="btn">About</a>
+			</div>
+		</div>
+	</div>
+</section>
+
+{% endblock %}

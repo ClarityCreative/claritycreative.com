@@ -1,0 +1,177 @@
+{% extends "_layout" %}
+
+{% set entryIds = craft.entries.section('work').ids() %}
+{% set categories = craft.categories.relatedTo({ sourceElement: entryIds }).groupId(1).find() %}
+
+{% set tag = craft.request.getParam('tag') %}
+{% set cat = craft.request.getParam('cat') %}
+{% set category = craft.categories.group('categories').title(cat).first() %}
+
+
+{% block content %}
+
+<section class="banner_sizing">
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-title">
+				<h1>Work</h1>
+				<hr class="short">
+				<h3>A few moments of clarity</h3>
+			</div>
+		</div>
+	</div>
+</section>
+
+
+{% set cookie = craft.setcookie.get() %}
+
+
+{% if not cookie %}
+		{% for entry in craft.entries.section('work').private('not 1').workSuperHero('1').limit(1) %}
+		<section class="project-banner project-banner-featured banner_sizing img_overlay" style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+			<div class="container cf">
+				<div class="grid_full">
+					<h1>Featured Project</h1>
+					<h2><a href="{{entry.url}}">{{entry.title}}</a></h2>
+					<a href="{{entry.url}}?play=true" class="btn">play &#9656;</a>
+				</div>
+			</div>
+		</section>
+		{% endfor %}
+{% endif %}
+<section>
+	{% if not cookie %}
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-statement banner_sizing">
+				<h3>{{workHeader.body}}</h3>
+				<hr class="short">
+			</div>
+	{% endif %}
+			{% if cookie %}
+			<div class="filter-selector">
+				<span>Show me:</span>
+				<ul class="select">
+						<li class="btn">
+							{% if cat %}
+								{% for category in categories %}
+									{% if category.slug == cat %}
+										{{ category.title }}
+									{% endif %}
+								{% endfor %}
+							﻿{% else %}
+								All Projects
+							{% endif %}
+					<ul class="selectable">
+						{% if cat %}
+							<li >
+								<a href="/work">All Projects</a>
+							</li>
+						{% endif %}
+						{% for category in categories %}
+							<li
+								{% if category.slug == cat %}
+									class="selected"
+								{% endif %}>
+								<a href="?cat={{category.slug}}" >
+									{{ category.title }}
+								</a>
+							</li>
+						{% endfor %}﻿
+						</ul>
+					</li>
+				</ul>
+			</div>
+			{% endif %}
+		</div>
+	</div>
+</section>
+
+<section class="recent">
+	<div class="container">
+		<div class="work cf">
+			{% if not cookie %}
+			<ul class="info-blocks">
+				{% for entry in craft.entries.section('work').private('not 1').workFeatured('1').order('title') %}
+				<li class="grid_4">
+					<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+						<a href="{{ entry.url }}">
+						</a>
+						<div>
+							<h5>{{ entry.title }}</h5>
+							<p>{{entry.shortDescription}}</p>
+						</div>
+					</div>
+				</li>
+				{% endfor %}
+			</ul>
+			{% else %}
+				{% cache %}
+				{% if not cat %}
+				<ul class="info-blocks">
+					{% for entry in craft.entries.section('work').order('title')  %}
+					<li class="grid_4">
+						<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+							<a href="{{ entry.url }}">
+							</a>
+							<div>
+								<h5>{{ entry.title }}</h5>
+								<p>{{entry.shortDescription}}</p>
+							</div>
+						</div>
+					</li>
+					{% endfor %}
+				</ul>
+				{% else %}
+				<ul class="info-blocks">
+					{% for entry in craft.entries.section('work').relatedTo(category) %}
+					<li class="grid_4">
+						<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+							<a href="{{ entry.url }}">
+							</a>
+							<div>
+								<h5>{{ entry.title }}</h5>
+								<p>{{entry.shortDescription}}</p>
+							</div>
+						</div>
+					</li>
+					{% endfor %}
+				</ul>
+				{% endif %}
+				{% endcache %}
+			{% endif %}
+		</div>
+	</div>
+</section>
+
+{% if not cookie %}
+<section>
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="page-statement page-statement-bottom banner_sizing">
+				<hr class="short">
+				<h3>Psst… If you know the <a href="/client-access/">secret password</a>, <strong>we can show you even more cool stories</strong>.</h3>
+			</div>
+		</div>
+	</div>
+</section>
+{% endif %}
+
+<script charset="utf-8">
+	$('#cat').on('change', function(){
+		var val = $(this).val();
+		if(val == 'all'){
+			location.href = "/work/#cat";
+		}else{
+			location.href = "?cat=" + val +"#cat";
+		}
+	});
+	$('.selectable').hide();
+	$('.select .btn').on('click', function(){
+		$(this).toggleClass('active');
+		$('.selectable').slideToggle('fast');
+	});
+</script>
+
+
+{% endblock %}

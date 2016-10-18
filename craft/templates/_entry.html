@@ -1,0 +1,90 @@
+{% extends "_layout" %}
+
+
+{% block content %}
+
+<style media="screen">
+
+	html, body{height:100%;}
+
+</style>
+
+{% set play = craft.request.getParam('play') %}
+{% if play %}
+	{% set autoplay = '?autoplay=1' %}
+	{% set style = 'style="background:transparent; display:block"'%}
+{% endif %}
+
+{% set cookie = craft.setcookie.get() %}
+
+
+<section class="project-banner single-work-banner banner_sizing img_overlay" >
+	<div class="container cf hero-bg" style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %}); background-repeat:no-repeat; background-size:cover; margin:0; width:100%" >
+		<div class="grid_full">
+			<div class="hero">
+				<div class="va_b">
+					{% if not play %}<a href="#" id="play" class="btn">play &#9656;</a>{% endif %}
+				</div>
+				<div class="gradient"></div>
+			</div>
+		</div>
+	</div>
+	<div id="video">
+		<iframe src="//player.vimeo.com/video/{{entry.video}}{{autoplay}}" frameborder="0" height="100%" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+	</section>
+	</div>
+<section>
+	<div class="container cf">
+		<div class="grid_full">
+			<div class="project-info">
+				<h1>{{entry.title}}</h1>
+				{% if entry.client %}
+				<h2>Client: {{entry.client}}</h2>
+				{% endif %}
+				{% if entry.body %}
+				<h5>Description</h5>
+				{{entry.body}}
+				{% endif %}
+
+				{% if cookie %}
+				<h5>More Info</h5>
+				<ul class="meta-list">
+				{% for tag in entry.tags %}
+					<li><a href="/work?tag={{tag.name}}">{{tag.name}}</a></li>
+					{% endfor %}
+					{% for category in entry.category %}
+					<li><a href="/work?cat={{category.slug}}">{{category.title}}</a></li>
+					{% endfor %}
+				</ul>
+				{% endif %}
+
+			</div>
+		</div>
+	</div>
+</section>
+
+{% if not play %}
+<script charset="utf-8">
+	$(document).ready(function(){
+		$('#video').hide();
+		$('#play').on('click', function(e){
+			e.preventDefault();
+			$('.project-banner').css('background-image','none');
+			$('#video').show();
+			$('.hero-bg').hide();
+			var src = $('#video iframe').attr('src');
+			$('#video iframe').attr('src', src + '?autoplay=1');
+			$(this).hide();
+		});
+	});
+</script>
+{% endif %}
+
+{% if play %}
+<script charset="utf-8">
+	$('.project-banner').css('background-image','none');
+	$('.hero-bg').hide();
+</script>
+{% endif %}
+
+{% endblock %}
