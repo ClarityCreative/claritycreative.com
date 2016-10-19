@@ -1779,6 +1779,9 @@ body.work .main-nav .work-item,
 ----------------------------------------------------------- */
 .contact-form .error {
 	color: $orange;
+	label {
+		font-weight: bold;
+	}
 }
 
 
@@ -2024,10 +2027,3 @@ left: -2em;
 right: -2em;
 background-image: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0));
 }
-
-
-
-
-
-
-
