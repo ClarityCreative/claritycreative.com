@@ -1788,6 +1788,11 @@ body.work .main-nav .work-item,
 	body.client-access .main-nav .client-access-item
 	{ color: $blue; }
 
+/* Contact Form
+----------------------------------------------------------- */
+#contactForm .error {
+	color: red;
+}
 
 
 

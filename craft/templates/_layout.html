@@ -12,8 +12,7 @@
 	<link href="/webfonts/ss-standard.css" rel="stylesheet" />
 	<link rel="stylesheet" href="/c/style.css">
 	<link rel="stylesheet" type="text/css" href="//cloud.typography.com/6349312/767324/css/fonts.css" />
-
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>
 
 {% if craft.request.getSegment(1) == "" %}
@@ -107,32 +106,33 @@
 			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			 
 		    $.fn.isInViewport = function(options) {
-		    
-		    	//set default options
-		    	var settings = $.extend ({
-			    	mode: 'middle',			//[optional] 	determines if calculation is made from the top, middle, or bottom or HTML element
-			    	verticalOffset: 0		//[optional]	adds a buffer to HTML element
-		    	}, options );    	
-		    	
-		       	var windowHeight = $(window).height(),
-			   		windowScrollTop = $(window).scrollTop(),
-			   		elOffset = settings.verticalOffset;
-			   	
-			   	switch (settings.mode)
-			   	{
-				   	case 'bottom': /* bottom of HTML element is in viewport */
-				   		elOffset += this.offset().top + this.outerHeight();
-				   		break;
-				   	case 'middle': /* middle of HTML element is in viewport */
-				   		elOffset += this.offset().top + this.outerHeight()/2;
-				   		break;
-				   	case 'top':	   /* top of HTML element is in viewport */
-				   	default:
-				   		elOffset += this.offset().top;
-				   		break;
-			   	}
-		       
-			   	return ((elOffset - windowScrollTop) <= windowHeight);
+				if(this.offset()) {
+					//set default options
+					var settings = $.extend ({
+						mode: 'middle',			//[optional] 	determines if calculation is made from the top, middle, or bottom or HTML element
+						verticalOffset: 0		//[optional]	adds a buffer to HTML element
+					}, options );    	
+					
+					var windowHeight = $(window).height(),
+						windowScrollTop = $(window).scrollTop(),
+						elOffset = settings.verticalOffset;
+					
+					switch (settings.mode)
+					{
+						case 'bottom': /* bottom of HTML element is in viewport */
+							elOffset += this.offset().top + this.outerHeight();
+							break;
+						case 'middle': /* middle of HTML element is in viewport */
+							elOffset += this.offset().top + this.outerHeight()/2;
+							break;
+						case 'top':	   /* top of HTML element is in viewport */
+						default:
+							elOffset += this.offset().top;
+							break;
+					}
+				
+					return ((elOffset - windowScrollTop) <= windowHeight);
+				}
 		    };
 		 
 		}( jQuery ));

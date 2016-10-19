@@ -23,9 +23,9 @@
 		<div class="grid_full">
 			<div class="page-form">
 				<h5>Get Started</h5>
-				<form method="post" action="../mailer.php">
+				<form id="contactForm" method="post" action="../mailer.php" >
 					<input type="text" name="name" placeholder="Your Name">
-					<input type="email" name="email" placeholder="Your Email Address">
+					<input type="email" name="email" type="email" placeholder="Your Email Address" required>
 					<textarea name="message" placeholder="Your Message"></textarea>
 					<input type="hidden" name="to" value="{{ settings.emailAddress }}">
 					<input type="submit" value="Send">
@@ -34,5 +34,10 @@
 		</div>
 	</div>
 </section>
+
+<script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.15.0/jquery.validate.min.js"></script>
+<script type="text/javascript">
+	 $("#contactForm").validate();
+</script>
 
 {% endblock %}
