@@ -1777,13 +1777,14 @@ body.work .main-nav .work-item,
 
 /* Contact Form
 ----------------------------------------------------------- */
-.contact-form .error {
-	color: $orange;
-	label {
-		font-weight: bold;
+.contact-form {
+	.error {
+		color: $orange;
+	}
+	label.error {
+		font-weight: 700;
 	}
 }
-
 
 
 /* MISC
