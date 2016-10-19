@@ -91,20 +91,22 @@
 	<div class="container">
 		<div class="work cf">
 			{% if not cookie %}
-			<ul class="info-blocks">
-				{% for entry in craft.entries.section('work').private('not 1').workFeatured('1').order('title') %}
-				<li class="grid_4">
-					<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
-						<a href="{{ entry.url }}">
-						</a>
-						<div>
-							<h5>{{ entry.title }}</h5>
-							<p>{{entry.shortDescription}}</p>
-						</div>
-					</div>
-				</li>
-				{% endfor %}
-			</ul>
+				{% cache %}
+					<ul class="info-blocks">
+						{% for entry in craft.entries.section('work').private('not 1').workFeatured('1').order('title') %}
+						<li class="grid_4">
+							<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+								<a href="{{ entry.url }}">
+								</a>
+								<div>
+									<h5>{{ entry.title }}</h5>
+									<p>{{entry.shortDescription}}</p>
+								</div>
+							</div>
+						</li>
+						{% endfor %}
+					</ul>
+				{% endcache %}
 			{% else %}
 				{% cache %}
 				{% if not cat %}
