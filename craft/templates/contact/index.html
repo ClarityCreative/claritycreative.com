@@ -90,22 +90,23 @@
 							</div>
 							{% endif %}
 						{% endif %}
-
-
-						{# Email Field #}
-						<input type="email" id="textEmail" placeholder="{{ email.name }}" name="fields[email]" {%- if contact is defined %}value="{{ contact.email }}"{% endif -%}{%- if email.required %} required{% endif-%}>
-						{% if contact is defined %}
-						<div class="error">
-							{{ errorList(contact.getErrors('email')) }}
-						</div>
+						{% if email is defined %}
+							{# Email Field #}
+							<input type="email" id="textEmail" placeholder="{{ email.name }}" name="fields[email]" {%- if contact is defined %}value="{{ contact.email }}"{% endif -%}{%- if email.required %} required{% endif-%}>
+							{% if contact is defined %}
+							<div class="error">
+								{{ errorList(contact.getErrors('email')) }}
+							</div>
+							{% endif %}
 						{% endif %}
-
-						{# Message Field #}
-						<textarea id="fields-message" placeholder="{{ message.name }}" name="fields[message]" {%- if message.required %} required{% endif-%}>{%- if contact is defined %}{{ contact.message }}{% endif -%}</textarea>
-						{% if contact is defined %}
-						<div class="error">
-							{{ errorList(contact.getErrors('message')) }}
-						</div>
+						{% if message is defined %}
+							{# Message Field #}
+							<textarea id="fields-message" placeholder="{{ message.name }}" name="fields[message]" {%- if message.required %} required{% endif-%}>{%- if contact is defined %}{{ contact.message }}{% endif -%}</textarea>
+							{% if contact is defined %}
+							<div class="error">
+								{{ errorList(contact.getErrors('message')) }}
+							</div>
+							{% endif %}
 						{% endif %}
 						<input type="submit" value="Send">
 					</form>
