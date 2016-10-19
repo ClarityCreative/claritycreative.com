@@ -23,13 +23,94 @@
 		<div class="grid_full">
 			<div class="page-form">
 				<h5>Get Started</h5>
-				<form id="contactForm" method="post" action="../mailer.php" >
-					<input type="text" name="name" placeholder="Your Name">
-					<input type="email" name="email" type="email" placeholder="Your Email Address" required>
-					<textarea name="message" placeholder="Your Message"></textarea>
-					<input type="hidden" name="to" value="{{ settings.emailAddress }}">
-					<input type="submit" value="Send">
-				</form>
+				{# Prepare our error macro #}
+				{% macro errorList(errors) %}
+					{# To display errors, you want to make sure errors exist, 
+						and then you can loop through and display them #}
+					{% if errors %}
+							<ul class="errors">
+									{% for error in errors %}
+											<li>{{ error }}</li>
+									{% endfor %}
+							</ul>
+					{% endif %}
+				{% endmacro %}
+
+				{% from _self import errorList %}
+
+
+				{# Check if we should display or form or thank you message #}
+				{% if craft.request.getParam('message') == 'thank-you' %}
+
+					{# Check for the last entry submitted #}
+					{% set lastEntry = craft.sproutForms.lastEntry() %}
+
+					{% if lastEntry %}
+						
+						{# If the last entry exists, we can output any of the variables
+						that were present in the form submission. #}
+						<p>Thanks <strong>{{ lastEntry.fullName }}</strong>! We'll be in touch soon!</p>
+						
+						<p>
+							Full Name: <em>{{ lastEntry.fullName }}</em><br/>
+							Email: <em>{{ lastEntry.email }}</em><br/>
+							Message: <em>{{ lastEntry.message }}</em><br/>
+						</p>
+
+					{% endif %}
+
+				{% else %}
+					
+					{# Retrieve our Form from the database #}
+					{% set form = craft.sproutForms.form('contact') %}
+
+					{# Retrieve our Form Entry with any errors if we have a failed submission #}
+					{% set submittedEntry = craft.sproutForms.getEntry(form) %}
+					
+					<form class="contact-form" method="post" accept-charset="utf-8">
+						{{ getCsrfInput() }}
+						<input type="hidden" name="action" value="sproutForms/entries/saveEntry">
+						<input type="hidden" name="handle" value="{{ form.handle }}">
+						<input type="hidden" name="redirect" value="{{ form.redirectUri }}">
+
+						{# Retrieve the Full Name Field Model #}
+						{% set fullName = form.getField('fullName') %}
+						{% set email  = form.getField('email') %}
+						{% set message = form.getField('message') %}
+
+						{# Check to confirm we have a fullName Field
+							Dynamically assign all the values from the Field Model so our
+							template will update if anybody changes those values in the Control Panel. Doing this this way is a little more risky than overriding the templates. Using this method, if someone adds a field changes a field handle in the Control Panel, you will also have to update your templates.  This example is mostly to illustrate how you have access to just about any value you need in your templates.  For more robust custom form behavior, see the documentation on template overrides. #}
+						{% if fullName is defined %}
+							{# Custom Field handles should be named in your inputs and added in the fields[] array #}
+							<input type="text" id="{{ fullName.handle }}" placeholder="{{ fullName.name }}" name="fields[{{ fullName.handle }}]" {%- if submittedEntry is defined %} value="{{ submittedEntry.fullName }}"{% endif -%} {%- if fullName.required %} required{% endif-%}>
+							{% if submittedEntry is defined %}
+							<div class="error">
+								{{ errorList(submittedEntry.getErrors(fullName.handle)) }}
+							</div>
+							{% endif %}
+						{% endif %}
+
+
+						{# Email Field #}
+						<input type="email" id="textEmail" placeholder="{{ email.name }}" name="fields[email]" {%- if contact is defined %}value="{{ contact.email }}"{% endif -%}>
+						{% if contact is defined %}
+						<div class="error">
+							{{ errorList(contact.getErrors('email')) }}
+						</div>
+						{% endif %}
+
+						{# Message Field #}
+						<textarea id="fields-message" placeholder="{{ message.name }}" name="fields[message]">{%- if contact is defined %}{{ contact.message }}{% endif -%}</textarea>
+						{% if contact is defined %}
+						<div class="error">
+							{{ errorList(contact.getErrors('message')) }}
+						</div>
+						{% endif %}
+						<input type="submit" value="Send">
+					</form>
+
+				{% endif %}
 			</div>
 		</div>
 	</div>
@@ -37,7 +118,7 @@
 
 <script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.15.0/jquery.validate.min.js"></script>
 <script type="text/javascript">
-	 $("#contactForm").validate();
+	 $(".contact-form").validate();
 </script>
 
 {% endblock %}

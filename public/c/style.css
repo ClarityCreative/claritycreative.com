@@ -1540,7 +1540,7 @@ body.client-access .main-nav .client-access-item {
 
 /* Contact Form
 ----------------------------------------------------------- */
-#contactForm .error {
+.contact-form .error {
   color: red; }
 
 /* MISC
