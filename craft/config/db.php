@@ -18,16 +18,17 @@ return array(
         'password' => 'root',
         'database' => 'clarity',
     ),
-    '.com' => array(
+    'claritycreative.com' => array(
         'server' => 'localhost',
         'user' => 'clarity',
         'password' => 'inthegrain',
         'database' => 'clarity',
     ),
-		'198.199.96.63' => array(
-				'server' => 'localhost',
-				'user' => 'clarity',
-				'password' => 'inthegrain',
-				'database' => 'clarity',
-		),
+    'staging.claritycreative.com' => array(
+        'server' => 'localhost',
+        'user' => 'clarity',
+        'password' => 'inthegrain',
+        'database' => 'clarity_staging',
+    ),
+	
 );
