@@ -93,7 +93,7 @@
 
 
 						{# Email Field #}
-						<input type="email" id="textEmail" placeholder="{{ email.name }}" name="fields[email]" {%- if contact is defined %}value="{{ contact.email }}"{% endif -%}>
+						<input type="email" id="textEmail" placeholder="{{ email.name }}" name="fields[email]" {%- if contact is defined %}value="{{ contact.email }}"{% endif -%}{%- if email.required %} required{% endif-%}>
 						{% if contact is defined %}
 						<div class="error">
 							{{ errorList(contact.getErrors('email')) }}
@@ -101,7 +101,7 @@
 						{% endif %}
 
 						{# Message Field #}
-						<textarea id="fields-message" placeholder="{{ message.name }}" name="fields[message]">{%- if contact is defined %}{{ contact.message }}{% endif -%}</textarea>
+						<textarea id="fields-message" placeholder="{{ message.name }}" name="fields[message]" {%- if message.required %} required{% endif-%}>{%- if contact is defined %}{{ contact.message }}{% endif -%}</textarea>
 						{% if contact is defined %}
 						<div class="error">
 							{{ errorList(contact.getErrors('message')) }}
