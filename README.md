@@ -22,7 +22,7 @@ The CSS file (found at `/public/c/style.css`) is a [Sass](http://sass-lang.com/)
 
 ## Deploying
 
-The repository is setup to automatically deploy to the Digital Ocean droplet (via a GitHub webhook event). The deploy script is located at `/craft/public/deploy/`.
+The repository is setup to automatically deploy to the Digital Ocean droplet (via a GitHub webhook event). The deploy script is located at `/public/deploy/`.
 
 * Changes pushed to the `staging` branch to deploy to the **staging site**.
 * Changes pushed to the `master` branch to deploy to the **production site**.
