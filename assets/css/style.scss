@@ -1,18 +1,5 @@
 @import 'reset';
-
-$black: #262828;
-$offblack: #2D2F2F;
-$gray: #7D7D78;
-$darkgray: #525454;
-$lightgray: #D9D9DA;
-$white: #FFF;
-$offwhite: #949595;
-$orange: #FF8936;
-$choc: #A4594D;
-$blue: #6DCEC1;
-
-$font: 'Whitney SSm A', 'Whitney SSm B', 'myriad pro', Helvetica, Arial, sans-serif;
-
+@import 'variables';
 
 @-o-viewport { width: device-width; }
 @-ms-viewport { width: device-width; }
@@ -1790,10 +1777,14 @@ body.work .main-nav .work-item,
 
 /* Contact Form
 ----------------------------------------------------------- */
-#contactForm .error {
-	color: red;
+.contact-form {
+	.error {
+		color: $orange;
+	}
+	label.error {
+		font-weight: 700;
+	}
 }
-
 
 
 /* MISC
@@ -2037,10 +2028,3 @@ left: -2em;
 right: -2em;
 background-image: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0));
 }
-
-
-
-
-
-
-

@@ -9,17 +9,22 @@
 
 return array(
     '*' => array(
-        'environmentVariables' => array(
-            'baseUrl'  => 'http://claritycreative.com/',
-        )
+        'siteUrl' => 'http://claritycreative.com/',
+        'omitScriptNameInUrls' => true,
+        'environmentVariables' => array()
     ),
 
     'local.clarity' => array(
         // 'devMode' => true,
+        'siteUrl' => 'http://local.clarity/',
         'omitScriptNameInUrls' => true,
-        'environmentVariables' => array(
-            'baseUrl'  => 'http://local.clarity/',
-            'localdev' => 'true',
-        )
+        'environmentVariables' => array()
+    ),
+
+     'staging.claritycreative.com' => array(
+        // 'devMode' => true,
+        'siteUrl' => 'http://staging.claritycreative.com/',
+        'omitScriptNameInUrls' => true,
+        'environmentVariables' => array()
     ),
 );
