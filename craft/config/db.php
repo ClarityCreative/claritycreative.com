@@ -22,7 +22,7 @@ return array(
         'server' => 'localhost',
         'user' => 'clarity',
         'password' => 'inthegrain',
-        'database' => 'clarity',
+        'database' => 'clarity_production',
     ),
     'staging.claritycreative.com' => array(
         'server' => 'localhost',
