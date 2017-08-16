@@ -22,4 +22,5 @@ class SetCookiePlugin extends BasePlugin
     {
         return '';
     }
+
 }

@@ -15,7 +15,7 @@ return array(
     ),
 
     'local.clarity' => array(
-        // 'devMode' => true,
+        'devMode' => true,
         'siteUrl' => 'http://local.clarity/',
         'omitScriptNameInUrls' => true,
         'environmentVariables' => array()
