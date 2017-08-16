@@ -8,8 +8,12 @@
 {% set teamCount = teamers|length %}
 
 {% block content %}
+{% set imageUrl = '/img/about.jpg' %}
+{% if image and image.url %}
+	{% set imageUrl = image.url %}
+{% endif %}
 
-<section class="title-banner banner_sizing img_overlay" style="background-image: {% if image.url %}url({{image.url}}){% else %}url('/img/about.jpg'){% endif %};">
+<section class="title-banner banner_sizing img_overlay" style="background-image: url('{{imageUrl}}');">
 	<div class="block block-transparent">
 		<div class="container cf">
 			<div class="grid_full">

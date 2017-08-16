@@ -3,7 +3,12 @@
 
 {% block content %}
 
-<section class="title-banner banner_sizing img_overlay" style="background-image: {% if image.url %}url({{image.url}}){% else %}url('/img/post.jpg'){% endif %};">
+{% set imageUrl = '/img/post.jpg' %}
+{% if image and image.url %}
+	{% set imageUrl = image.url %}
+{% endif %}
+
+<section class="title-banner banner_sizing img_overlay" style="background-image: url('{{imageUrl}}');">
 	<a>
 		<div class="container cf">
 			<div class="grid_full">
