@@ -3,7 +3,7 @@
 $payload = json_decode($HTTP_RAW_POST_DATA, true);
 if ($payload) {
   if($payload['ref'] == "refs/heads/master") {
-   $output = shell_exec( 'cd cd /var/www/claritycreative.com/ && git reset --hard origin/master && git pull' );
+   $output = shell_exec( 'cd /var/www/claritycreative.com/ && git reset --hard origin/master && git pull' );
     echo "<pre>$output</pre>";
   }
   else if($payload['ref'] == "refs/heads/staging") {
