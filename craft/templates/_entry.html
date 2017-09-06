@@ -10,6 +10,7 @@
 </style>
 
 {% set play = craft.request.getParam('play') %}
+{% set autoplay = '' %}
 {% if play %}
 	{% set autoplay = '?autoplay=1' %}
 	{% set style = 'style="background:transparent; display:block"'%}

@@ -34,10 +34,10 @@
     let isInputValid = false;
 $(document).ready(function() {
     //Perform the initial lookup
-    let textInput = $('.videoInput').val();
+    let textInput = $('#{{id}}-field .videoInput').val();
     updateVideoInfo(textInput);
 
-    $('.videoInput').keyup(function(e) {
+    $('#{{id}}-field .videoInput').keyup(function(e) {
         let text = $(this).val();
         $('#{{id}}-field input').removeClass('error');
         updateVideoInfo(text);
@@ -58,30 +58,30 @@ $(document).ready(function() {
 
 function updateVideoInfo(text) {
     if(text) {
-            $('.videoInfo').show();
+            $('#{{id}}-field .videoInfo').show();
             $.get(`https://vimeo.com/api/oembed.json?url=https%3A//vimeo.com/${text}`,
             function(data) {
-                $('.videoWrapper').show();
-                $('.videoInfo').empty();
-                $('.videoWrapper').empty();
-                $('.videoInfo').append('<h2>'+data.title+'</h2>');
-                $('.videoInfo').append('<h3>'+data.description+'</h3>');
-                $('.videoInfo').append('<h3>'+data.duration+' Seconds</h3>');
-                $('.videoWrapper').append(data.html);
+                $('#{{id}}-field .videoWrapper').show();
+                $('#{{id}}-field .videoInfo').empty();
+                $('#{{id}}-field .videoWrapper').empty();
+                $('#{{id}}-field .videoInfo').append('<h2>'+data.title+'</h2>');
+                $('#{{id}}-field .videoInfo').append('<h3>'+data.description+'</h3>');
+                $('#{{id}}-field .videoInfo').append('<h3>'+data.duration+' Seconds</h3>');
+                $('#{{id}}-field .videoWrapper').append(data.html);
                 isInputValid = true;
             })
             .fail(function() {
-                $('.videoWrapper').hide();
-                $('.videoWrapper').empty();
-                $('.videoInfo').empty();
-                $('.videoInfo').append('<h2 class="alert">No Video Found!</h2>');
+                $('#{{id}}-field .videoWrapper').hide();
+                $('#{{id}}-field .videoWrapper').empty();
+                $('#{{id}}-field .videoInfo').empty();
+                $('#{{id}}-field .videoInfo').append('<h2 class="alert">No Video Found!</h2>');
                 isInputValid = false
             })
         } else {
-            $('.videoWrapper').hide();
-            $('.videoInfo').hide();
-            $('.videoWrapper').empty();
-            $('.videoInfo').empty();
+            $('#{{id}}-field .videoWrapper').hide();
+            $('#{{id}}-field .videoInfo').hide();
+            $('#{{id}}-field .videoWrapper').empty();
+            $('#{{id}}-field .videoInfo').empty();
             isInputValid = true;
         }
 }
