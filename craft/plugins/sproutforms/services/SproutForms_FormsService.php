@@ -81,7 +81,7 @@ class SproutForms_FormsService extends BaseApplicationComponent
 		$formRecord->groupId                  = $form->groupId;
 		$formRecord->redirectUri              = $form->redirectUri;
 		$formRecord->submitAction             = $form->submitAction;
-		$formRecord->savePayload              = $form->savePayload;
+		$formRecord->saveData                 = $form->saveData;
 		$formRecord->submitButtonText         = $form->submitButtonText;
 		$formRecord->notificationEnabled      = $form->notificationEnabled;
 		$formRecord->notificationRecipients   = $form->notificationRecipients;
@@ -456,10 +456,11 @@ class SproutForms_FormsService extends BaseApplicationComponent
 	 *
 	 * @param SproutForms_FormModel  $form
 	 * @param SproutForms_EntryModel $entry
+	 * @param array $post
 	 *
 	 * @return boolean
 	 */
-	public function sendNotification(SproutForms_FormModel $form, SproutForms_EntryModel $entry)
+	public function sendNotification(SproutForms_FormModel $form, SproutForms_EntryModel $entry, $post = null)
 	{
 		// Get our recipients
 		$recipients = ArrayHelper::stringToArray($form->notificationRecipients);
@@ -486,7 +487,12 @@ class SproutForms_FormsService extends BaseApplicationComponent
 
 			craft()->templates->setTemplatesPath(craft()->path->getCpTemplatesPath());
 
-			$post = (object) $_POST;
+			if (is_null($post))
+			{
+				$post = $_POST;
+			}
+
+			$post = (object) $post;
 
 			$email->fromEmail = $form->notificationSenderEmail;
 			$email->fromName  = $form->notificationSenderName;
@@ -497,7 +503,7 @@ class SproutForms_FormsService extends BaseApplicationComponent
 				// Has a custom subject been set for this form?
 				if ($form->notificationSubject)
 				{
-					$email->subject = craft()->templates->renderObjectTemplate($form->notificationSubject, $post);
+					$email->subject = craft()->templates->renderObjectTemplate($form->notificationSubject, $post, true);
 				}
 
 				$email->subject = sproutForms()->encodeSubjectLine($email->subject);
@@ -505,7 +511,7 @@ class SproutForms_FormsService extends BaseApplicationComponent
 				// custom replyTo has been set for this form
 				if ($form->notificationReplyToEmail)
 				{
-					$email->replyTo = craft()->templates->renderObjectTemplate($form->notificationReplyToEmail, $post);
+					$email->replyTo = craft()->templates->renderObjectTemplate($form->notificationReplyToEmail, $post, true);
 
 					if (!filter_var($email->replyTo, FILTER_VALIDATE_EMAIL))
 					{
@@ -515,7 +521,7 @@ class SproutForms_FormsService extends BaseApplicationComponent
 
 				foreach ($recipients as $emailAddress)
 				{
-					$email->toEmail = craft()->templates->renderObjectTemplate($emailAddress, $post);
+					$email->toEmail = craft()->templates->renderObjectTemplate($emailAddress, $post, true);
 
 					if (filter_var($email->toEmail, FILTER_VALIDATE_EMAIL))
 					{
@@ -625,9 +631,18 @@ class SproutForms_FormsService extends BaseApplicationComponent
 
 	public function createNewForm($name = null, $handle = null)
 	{
-		$form   = new SproutForms_FormModel();
-		$name   = empty($name) ? 'Form' : $name ;
-		$handle = empty($handle) ? 'form' : $handle;
+		$form     = new SproutForms_FormModel();
+		$name     = empty($name) ? 'Form' : $name ;
+		$handle   = empty($handle) ? 'form' : $handle;
+		$settings = craft()->plugins->getPlugin('sproutforms')->getSettings();
+
+		if ($settings['enableSaveData'])
+		{
+			if ($settings['enableSaveDataPerFormBasis'])
+			{
+				$form->saveData = $settings['saveDataByDefault'];
+			}
+		}
 
 		$form->name   = sproutForms()->forms->getFieldAsNew('name', $name);
 		$form->handle = sproutForms()->forms->getFieldAsNew('handle', $handle);
@@ -647,5 +662,17 @@ class SproutForms_FormsService extends BaseApplicationComponent
 		}
 
 		return false;
+	}
+
+	public function installDefaultSettings()
+	{
+		$defaultSettings = '{"pluginNameOverride":null,"templateFolderOverride":"","enablePerFormTemplateFolderOverride":"","enablePayloadForwarding":"","enableSaveData":"1","enableSaveDataPerFormBasis":"", "saveDataByDefault":"1"}';
+
+		craft()->db->createCommand()->update('plugins',
+				array('settings' => $defaultSettings),
+				array('class' => 'SproutForms')
+			);
+
+		return true;
 	}
 }

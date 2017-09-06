@@ -32,7 +32,7 @@ class SproutFormsPlugin extends BasePlugin
 	 */
 	public function getVersion()
 	{
-		return '2.3.4';
+		return '2.4.2';
 	}
 
 	/**
@@ -40,7 +40,7 @@ class SproutFormsPlugin extends BasePlugin
 	 */
 	public function getSchemaVersion()
 	{
-		return '2.3.0';
+		return '2.4.0';
 	}
 
 	/**
@@ -132,6 +132,9 @@ class SproutFormsPlugin extends BasePlugin
 			'templateFolderOverride'              => AttributeType::String,
 			'enablePerFormTemplateFolderOverride' => AttributeType::Bool,
 			'enablePayloadForwarding'             => AttributeType::Bool,
+			'enableSaveData'                      => AttributeType::Bool,
+			'enableSaveDataPerFormBasis'          => AttributeType::Bool,
+			'saveDataByDefault'                   => AttributeType::Bool,
 		);
 	}
 
@@ -235,24 +238,14 @@ class SproutFormsPlugin extends BasePlugin
 	public function registerSproutImportImporters()
 	{
 		return array(
+			// Element Importers
 			new SproutForms_EntrySproutImportElementImporter(),
-			new SproutForms_FormSproutImportElementImporter()
-		);
-	}
+			new SproutForms_FormSproutImportElementImporter(),
 
-	/**
-	 * Register importer fields
-	 *
-	 * @return array
-	 */
-	public function registerSproutImportFieldImporters()
-	{
-		$fields = array(
+			// Field Importers
 			new SproutForms_FormsSproutImportFieldImporter(),
 			new SproutForms_EntrySproutImportFieldImporter()
 		);
-
-		return $fields;
 	}
 
 	/**
@@ -263,6 +256,7 @@ class SproutFormsPlugin extends BasePlugin
 	public function onAfterInstall()
 	{
 		sproutForms()->entries->installDefaultEntryStatuses();
+		sproutForms()->forms->installDefaultSettings();
 		craft()->request->redirect(UrlHelper::getCpUrl() . '/sproutforms/settings/examples');
 	}
 
