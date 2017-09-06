@@ -1,0 +1,89 @@
+
+<style>
+.videoInfo {
+    padding-top: 25px;
+}
+.videoWrapper {
+	position: relative;
+	padding-bottom: 56.25%; /* 16:9 */
+	padding-top: 25px;
+	height: 0;
+    margin-top: 25px;
+}
+.videoWrapper iframe {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+.alert {
+    color: red;
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+{% includeJsResource "videoRetriever/js/vimeoRetriever.js" %}
+<input type="text" class="text nicetext fullwidth videoInput" name="{{ name }}" value="{{value}}" />
+<div class="videoInfo">
+
+</div>
+<div class="videoWrapper">
+</div>
+
+<script>
+    let isInputValid = false;
+$(document).ready(function() {
+    //Perform the initial lookup
+    let textInput = $('.videoInput').val();
+    updateVideoInfo(textInput);
+
+    $('.videoInput').keyup(function(e) {
+        let text = $(this).val();
+        $('#{{id}}-field input').removeClass('error');
+        updateVideoInfo(text);
+    });
+
+    $('form').submit(function(e) {
+        if(isInputValid) {
+            return true;
+        } else {
+            $('#{{id}}-field input').addClass('error');
+            $('html, body').animate({
+                scrollTop: $("#{{id}}-field").offset().top
+            }, 100);
+            return false;
+        }
+    });
+});
+
+function updateVideoInfo(text) {
+    if(text) {
+            $('.videoInfo').show();
+            $.get(`https://vimeo.com/api/oembed.json?url=https%3A//vimeo.com/${text}`,
+            function(data) {
+                $('.videoWrapper').show();
+                $('.videoInfo').empty();
+                $('.videoWrapper').empty();
+                $('.videoInfo').append('<h2>'+data.title+'</h2>');
+                $('.videoInfo').append('<h3>'+data.description+'</h3>');
+                $('.videoInfo').append('<h3>'+data.duration+' Seconds</h3>');
+                $('.videoWrapper').append(data.html);
+                isInputValid = true;
+            })
+            .fail(function() {
+                $('.videoWrapper').hide();
+                $('.videoWrapper').empty();
+                $('.videoInfo').empty();
+                $('.videoInfo').append('<h2 class="alert">No Video Found!</h2>');
+                isInputValid = false
+            })
+        } else {
+            $('.videoWrapper').hide();
+            $('.videoInfo').hide();
+            $('.videoWrapper').empty();
+            $('.videoInfo').empty();
+            isInputValid = true;
+        }
+}
+
+</script>
