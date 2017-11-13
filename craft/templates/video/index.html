@@ -1,6 +1,6 @@
 {% extends "_layout" %}
 
-{% set entryIds = craft.entries.section('work').ids() %}
+{% set entryIds = craft.entries.section('video').ids() %}
 {% set categories = craft.categories.relatedTo({ sourceElement: entryIds }).groupId(1).find() %}
 
 {% set tag = craft.request.getParam('tag') %}
@@ -14,7 +14,7 @@
 	<div class="container cf">
 		<div class="grid_full">
 			<div class="page-title">
-				<h1>Work</h1>
+				<h1>video</h1>
 				<hr class="short">
 				<h3>A few moments of clarity</h3>
 			</div>
@@ -27,8 +27,8 @@
 
 
 {% if not cookie %}
-		{% for entry in craft.entries.section('work').private('not 1').workSuperHero('1').limit(1) %}
-		<section class="project-banner project-banner-featured banner_sizing img_overlay" style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+		{% for entry in craft.entries.section('video').private('not 1').videoSuperHero('1').limit(1) %}
+		<section class="project-banner project-banner-featured banner_sizing img_overlay" style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
 			<div class="container cf">
 				<div class="grid_full">
 					<h1>Featured Project</h1>
@@ -44,7 +44,7 @@
 	<div class="container cf">
 		<div class="grid_full">
 			<div class="page-statement banner_sizing">
-				<h3>{{workHeader.body}}</h3>
+				<h3>{{videoHeader.body}}</h3>
 				<hr class="short">
 			</div>
 	{% endif %}
@@ -65,7 +65,7 @@
 					<ul class="selectable">
 						{% if cat %}
 							<li >
-								<a href="/work">All Projects</a>
+								<a href="/video">All Projects</a>
 							</li>
 						{% endif %}
 						{% for category in categories %}
@@ -93,9 +93,9 @@
 			{% if not cookie %}
 				{% cache %}
 					<ul class="info-blocks">
-						{% for entry in craft.entries.section('work').private('not 1').workFeatured('1').order('title') %}
+						{% for entry in craft.entries.section('video').private('not 1').videoFeatured('1').order('title') %}
 						<li class="grid_4">
-							<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+							<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
 								<a href="{{ entry.url }}">
 								</a>
 								<div>
@@ -111,9 +111,9 @@
 				{% cache %}
 				{% if not cat %}
 				<ul class="info-blocks">
-					{% for entry in craft.entries.section('work').order('title')  %}
+					{% for entry in craft.entries.section('video').order('title')  %}
 					<li class="grid_4">
-						<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+						<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
 							<a href="{{ entry.url }}">
 							</a>
 							<div>
@@ -126,9 +126,9 @@
 				</ul>
 				{% else %}
 				<ul class="info-blocks">
-					{% for entry in craft.entries.section('work').relatedTo(category) %}
+					{% for entry in craft.entries.section('video').relatedTo(category) %}
 					<li class="grid_4">
-						<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+						<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
 							<a href="{{ entry.url }}">
 							</a>
 							<div>
@@ -163,7 +163,7 @@
 	$('#cat').on('change', function(){
 		var val = $(this).val();
 		if(val == 'all'){
-			location.href = "/work/#cat";
+			location.href = "/video/#cat";
 		}else{
 			location.href = "?cat=" + val +"#cat";
 		}
