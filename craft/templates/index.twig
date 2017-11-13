@@ -3,10 +3,10 @@
 
 {% block content %}
 
-{% paginate craft.entries.section('work').limit(1).private('not 1').superHero('1') as entries %}
+{% paginate craft.entries.section('video').limit(1).private('not 1').superHero('1') as entries %}
 {% for entry in entries %}
 <div class="the_spot"></div>
-<section class="hero-section banner_sizing img_overlay" style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+<section class="hero-section banner_sizing img_overlay" style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
 	<div class="container cf">
 		<div class="grid_full">
 			<div class="hero">
@@ -44,11 +44,11 @@
 			</div>
 		</div>
 		<div class="work">
-			{% paginate craft.entries.section('work').limit(3).private('not 1').superHero('not 1').featured('1') as entries %}
+			{% paginate craft.entries.section('video').limit(3).private('not 1').superHero('not 1').featured('1') as entries %}
 			<ul class="info-blocks info-blocks-advanced-effect cf">
 				{% for entry in entries %}
 				<li class="grid_4">
-					<div style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+					<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
 						<a href="{{ entry.url }}">
 						</a>
 						<div>

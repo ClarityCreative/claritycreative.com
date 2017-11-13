@@ -20,7 +20,7 @@
 
 
 <section class="project-banner single-work-banner banner_sizing img_overlay" >
-	<div class="container cf hero-bg" style="background-image: url({%if entry.workImage | length %}{% for asset in entry.workImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %}); background-repeat:no-repeat; background-size:cover; margin:0; width:100%" >
+	<div class="container cf hero-bg" style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %}); background-repeat:no-repeat; background-size:cover; margin:0; width:100%" >
 		<div class="grid_full">
 			<div class="hero">
 				<div class="va_b">
@@ -51,10 +51,10 @@
 				<h5>More Info</h5>
 				<ul class="meta-list">
 				{% for tag in entry.tags %}
-					<li><a href="/work?tag={{tag.name}}">{{tag.name}}</a></li>
+					<li><a href="/video?tag={{tag.name}}">{{tag.name}}</a></li>
 					{% endfor %}
 					{% for category in entry.category %}
-					<li><a href="/work?cat={{category.slug}}">{{category.title}}</a></li>
+					<li><a href="/video?cat={{category.slug}}">{{category.title}}</a></li>
 					{% endfor %}
 				</ul>
 				{% endif %}
