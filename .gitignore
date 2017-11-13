@@ -4,3 +4,4 @@
 .vscode/
 .codekit*
 
+.DS_Store

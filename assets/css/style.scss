@@ -552,6 +552,7 @@ footer {
 		left: 0;
 		top: 0;
 		padding-top: 2.25em;
+		text-align: left;
 		text-rendering: optimizeLegibility;
 		h3{
 			font-size:2.1em;
@@ -560,6 +561,14 @@ footer {
 		span, strong {
 			display: inline-block;
 			vertical-align: top;
+		}
+	}
+	.over-message {
+		z-index: 9999;
+		.container {
+			margin: 0 auto;
+			h1, h2 { text-align: left; }
+			a { bottom: -60px; left: 0; position: absolute; }
 		}
 	}
 }
@@ -1129,15 +1138,49 @@ ul.about-comm{
 		font-size: 0.925em;
 		margin-bottom: 0.95em;
 	}
-	p {
+	p, li {
 		font-size: 1.25em;
 		letter-spacing: -1px;
 		line-height: 1.45;
 		word-spacing: 1px;
-		margin-bottom: 2.7em;
+	}
+	p{
+		margin-bottom: 2.7em;		
+	}
+	li {
+		font-style: italic;
+	}
+	figure {
+		margin: 0 0 1.55em;
+		img{
+			margin-bottom: 1.55em;
+		}
+		&.offset-img {
+ 			left: 5.35em;
+			float: right;
+ 			position: relative;
+		}
+	}
+	.grid_full {
+		margin: 5.35em 0;
+		max-width: 205%;
+		width: 205%;
 	}
 }
 
+@media screen and (max-width: 480px) {
+	.project-info {
+		padding-bottom: 2.7em;
+		figure.offset-img {
+			margin-left: 1em;
+			position: inherit;
+			width: 50%;
+		}
+		.grid_full {
+			width: 100%;
+		}
+	}
+}
 @media screen and (min-width: 480px) {
 	.project-info{
 		h1 {
@@ -1145,6 +1188,9 @@ ul.about-comm{
 		}
 		h2 {
 			font-size: 2.3em;
+		}
+		.grid_full {
+			width: 112%;
 		}
 	}
 }
@@ -1154,26 +1200,41 @@ ul.about-comm{
 		h1 {
 			font-size: 3.75em;
 		}
-		p {
+		p, li {
 			font-size: 1.35em;
+			&.beta {
+				font-size: 1em;
+			}
+		}
+		.grid_full {
+			width: 133%;
 		}
 	}
 }
 @media screen and (min-width: 960px) {
 	.project-info {
 		max-width: 66%;
-		p {
+		p, li {
 			font-size: 1.55em;
+			&.beta {
+				font-size: 1.35em;
+			}
 		}
 		h1 {
 			font-size: 4.5em;
+		}
+		.grid_full {
+			width: 147%;
 		}
 	}
 }
 @media (min-width: 1440px) {
 	.project-info {
 			margin-top: 3em;
+		.grid_full {
+			width: 205%;
 		}
+	}
 }
 
 

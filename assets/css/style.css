@@ -530,7 +530,6 @@ footer {
     left: 0;
     top: 0;
     padding-top: 2.25em;
-    text-align: left;
     text-rendering: optimizeLegibility; }
     .hero .message h3 {
       font-size: 2.1em;
@@ -538,16 +537,6 @@ footer {
     .hero .message span, .hero .message strong {
       display: inline-block;
       vertical-align: top; }
-  .hero .over-message {
-    z-index: 9999; }
-    .hero .over-message .container {
-      margin: 0 auto; }
-      .hero .over-message .container h1, .hero .over-message .container h2 {
-        text-align: left; }
-      .hero .over-message .container a {
-        bottom: -60px;
-        left: 0;
-        position: absolute; }
 
 .scroller {
   width: 100%;
@@ -1006,73 +995,39 @@ ul.about-comm li {
     letter-spacing: 1px;
     font-size: 0.925em;
     margin-bottom: 0.95em; }
-  .project-info p, .project-info li {
+  .project-info p {
     font-size: 1.25em;
     letter-spacing: -1px;
     line-height: 1.45;
-    word-spacing: 1px; }
-  .project-info p {
-    margin-bottom: 2.7em; }
-  .project-info li {
-    font-style: italic; }
-  .project-info figure {
-    margin: 0 0 1.55em; }
-    .project-info figure img {
-      margin-bottom: 1.55em; }
-    .project-info figure.offset-img {
-      left: 5.35em;
-      float: right;
-      position: relative; }
-  .project-info .grid_full {
-    margin: 5.35em 0;
-    max-width: 205%;
-    width: 205%; }
-
-@media screen and (max-width: 480px) {
-  .project-info {
-    padding-bottom: 2.7em; }
-    .project-info figure.offset-img {
-      margin-left: 1em;
-      position: inherit;
-      width: 50%; }
-    .project-info .grid_full {
-      width: 100%; } }
+    word-spacing: 1px;
+    margin-bottom: 2.7em;
+    background: purple; }
 
 @media screen and (min-width: 480px) {
   .project-info h1 {
     font-size: 2.75em; }
   .project-info h2 {
-    font-size: 2.3em; }
-  .project-info .grid_full {
-    width: 112%; } }
+    font-size: 2.3em; } }
 
 @media screen and (min-width: 720px) {
   .project-info h1 {
     font-size: 3.75em; }
-  .project-info p, .project-info li {
-    font-size: 1.35em; }
-    .project-info p.beta, .project-info li.beta {
-      font-size: 1em; }
-  .project-info .grid_full {
-    width: 133%; } }
+  .project-info p {
+    font-size: 1.35em; } }
 
 @media screen and (min-width: 960px) {
   .project-info {
     max-width: 66%; }
-    .project-info p, .project-info li {
+    .project-info p {
       font-size: 1.55em; }
-      .project-info p.beta, .project-info li.beta {
-        font-size: 1.35em; }
+    .project-info .beta {
+      font-size: 1.35; }
     .project-info h1 {
-      font-size: 4.5em; }
-    .project-info .grid_full {
-      width: 147%; } }
+      font-size: 4.5em; } }
 
 @media (min-width: 1440px) {
   .project-info {
-    margin-top: 3em; }
-    .project-info .grid_full {
-      width: 205%; } }
+    margin-top: 3em; } }
 
 /* Meta list
 -------------------- */
