@@ -41,16 +41,6 @@
 		"oS": 0,
 		"uL": 1
 		},
-	"\/assets\/css\/style.css": {
-		"aP": 1,
-		"bl": 0,
-		"ft": 16,
-		"ma": 0,
-		"oA": 0,
-		"oAP": "\/assets\/css\/style-min.css",
-		"oF": 0,
-		"oS": 3
-		},
 	"\/assets\/css\/style.scss": {
 		"aP": 0,
 		"bl": 0,
@@ -24676,6 +24666,12 @@
 		"oAP": "\/craft\/storage\/runtime\/compiled_templates\/36\/36e73533347d8c1f56e60a7bcbf26af1bcfac4cc192976736dfa9faaaab73136.php",
 		"oF": 0
 		},
+	"\/craft\/storage\/runtime\/compiled_templates\/41\/415a222939017a0fc37f38d8545d31bce5895dd84e7eef28e68db4e4c432927e.php": {
+		"ft": 8192,
+		"oA": 2,
+		"oAP": "\/craft\/storage\/runtime\/compiled_templates\/41\/415a222939017a0fc37f38d8545d31bce5895dd84e7eef28e68db4e4c432927e.php",
+		"oF": 0
+		},
 	"\/craft\/storage\/runtime\/compiled_templates\/43\/436e18c828ff5f685d0e71e308e2ef22127a33b2ae7201729e87fe4ba30a4f32.php": {
 		"ft": 8192,
 		"oA": 2,
@@ -24734,12 +24730,6 @@
 		"ft": 8192,
 		"oA": 0,
 		"oAP": "\/craft\/templates\/404.html",
-		"oF": 0
-		},
-	"\/craft\/templates\/_entry.html": {
-		"ft": 8192,
-		"oA": 0,
-		"oAP": "\/craft\/templates\/_entry.html",
 		"oF": 0
 		},
 	"\/craft\/templates\/_layout.html": {
@@ -24832,10 +24822,10 @@
 		"oAP": "\/craft\/templates\/sandbox\/test.html",
 		"oF": 0
 		},
-	"\/craft\/templates\/work\/index.html": {
+	"\/craft\/templates\/video\/index.html": {
 		"ft": 8192,
-		"oA": 0,
-		"oAP": "\/craft\/templates\/work\/index.html",
+		"oA": 2,
+		"oAP": "\/craft\/templates\/video\/index.html",
 		"oF": 0
 		},
 	"\/craft\/web.config": {
