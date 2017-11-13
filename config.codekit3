@@ -41,16 +41,6 @@
 		"oS": 0,
 		"uL": 1
 		},
-	"\/assets\/css\/style.css": {
-		"aP": 1,
-		"bl": 0,
-		"ft": 16,
-		"ma": 0,
-		"oA": 0,
-		"oAP": "\/assets\/css\/style-min.css",
-		"oF": 0,
-		"oS": 3
-		},
 	"\/assets\/css\/style.scss": {
 		"aP": 0,
 		"bl": 0,
@@ -25134,7 +25124,7 @@
 		},
 	"\/craft\/templates\/_entry.html": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 1,
 		"oAP": "\/craft\/templates\/_entry.html",
 		"oF": 0
 		},
