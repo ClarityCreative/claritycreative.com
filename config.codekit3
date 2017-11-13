@@ -24796,6 +24796,12 @@
 		"oAP": "\/craft\/templates\/index.twig",
 		"oF": 0
 		},
+	"\/craft\/templates\/live\/entry\/index.html": {
+		"ft": 8192,
+		"oA": 2,
+		"oAP": "\/craft\/templates\/live\/entry\/index.html",
+		"oF": 0
+		},
 	"\/craft\/templates\/news\/_entry.html": {
 		"ft": 8192,
 		"oA": 0,
@@ -25275,12 +25281,6 @@
 		"oF": 0,
 		"sC": 1,
 		"tS": 0
-		},
-	"\/public\/live\/entry\/index.html": {
-		"ft": 8192,
-		"oA": 2,
-		"oAP": "\/public\/live\/entry\/index.html",
-		"oF": 0
 		},
 	"\/public\/robots.txt": {
 		"ft": 8192,
