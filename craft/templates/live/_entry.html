@@ -1,0 +1,136 @@
+{% extends "_layout" %}
+
+
+{% block content %}
+
+<style media="screen">
+
+	html, body{height:100%;}
+
+</style>
+
+{% set play = craft.request.getParam('play') %}
+{% set autoplay = '' %}
+{% if play %}
+	{% set autoplay = '?autoplay=1' %}
+	{% set style = 'style="background:transparent; display:block"'%}
+{% endif %}
+
+{% set cookie = craft.setcookie.get() %}
+
+
+
+<section class="project-banner single-work-banner banner_sizing img_overlay" >
+	<div class="container cf hero-bg" style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %}); background-repeat:no-repeat; background-size:cover; margin:0; width:100%" >
+		<div class="grid_full">
+			<div class="hero grid_9">
+				<div class="va_b over-message">
+					<div class="container">
+						<h1>{{entry.title}}</h1>
+						{% if entry.client %}
+						<h2>Client: {{entry.client}}</h2>
+						{% endif %}
+						<a href="#" id="play" class="btn">play &#9656;</a>				
+					</div>
+				</div>
+				<div class="gradient"></div>
+			</div>
+		</div>
+	</div>
+	<div id="video">
+		<div class="video-holder">
+			<iframe src="//player.vimeo.com/video/{{entry.video}}{{autoplay}}" frameborder="0" height="100%" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+		</div>
+	</div>
+</section>
+
+
+
+<section>
+	<div class="container cf">
+		<div class="grid_9">
+			<div class="project-info">
+				{% if entry.body %}
+					<h5>Event Brief</h5>
+					{{entry.body}}
+				{% endif %}
+
+				{% if entry.liveDescription %}
+					<h5>Description</h5>
+					{% for block in entry.liveDescription.type('text, image') %}
+					    {% if block.type == "text" %}
+					        <span class="beta">{{ block.text }}</span>
+					    {% endif %}
+
+					    {% if block.type == "image" %}
+						{% set image = entry.liveDescription.block('image') %}
+						    {% if block.imagePosition == 'right' %}
+								<figure class="content_pad_left grid_flow_opposite offset-img">
+								{% elseif block.imagePosition == 'left' %}
+								<figure class="content_pad_right grid_flow_opposite offset-img">
+								{% else %}
+								<figure class="cf grid_full">							
+							{% endif %}
+									<img src="http://via.placeholder.com/420x280" alt="" />
+									<figcaption>
+										{{ block.caption }}
+									</figcaption>
+								</figure>
+
+					    {% endif %}	
+					    			    
+					{% endfor %}				
+
+					{% if entry.liveDescription.type('press') %}
+			        <h5>Press</h5>
+					<ul>
+						{% set entries = entry.liveDescription.type('press') %}
+					{% for entry in entries %}
+						<li><a href="{{ entry.webAddress }}">{{ entry.displayText }}</a></li>
+					{% endfor %}
+					</ul>
+				    {% endif %}
+
+				{% endif %}
+				
+				
+			</div>
+		</div>
+		<div class="sidebar grid_3 project-info">
+			{% if entry.tags %}
+			<h5>Services Provided</h5>
+			<ul class="services">
+			{% for tag in entry.tags %}
+				<li>{{tag.name}}</a></li>
+			{% endfor %}
+			</ul>
+			{% endif %}
+		</div>
+	</div>
+</section>
+
+{% if not play %}
+<script charset="utf-8">
+	$(document).ready(function(){
+		$('#video').hide();
+		$('#play').on('click', function(e){
+			e.preventDefault();
+			$('.project-banner').css('background-image','none');
+			$('#video').show();
+			$('.hero-bg').hide();
+			var src = $('#video iframe').attr('src');
+			$('#video iframe').attr('src', src + '?autoplay=1');
+			$(this).hide();
+		});
+	});
+</script>
+{% endif %}
+
+{% if play %}
+<script charset="utf-8">
+	$('.project-banner').css('background-image','none');
+	$('.hero-bg').hide();
+</script>
+{% endif %}
+
+{% endblock %}

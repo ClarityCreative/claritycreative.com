@@ -954,7 +954,9 @@ ul.about-comm{
 	h1 {
 		font-size: 2.25em;
 		letter-spacing: -2px;
+		line-height: 1.2em;
 		margin-bottom: 0;
+		padding-bottom: .25em;
 	}
 	h2 {
 		font-size: 2.3em;
@@ -1202,9 +1204,9 @@ ul.about-comm{
 		}
 		p, li {
 			font-size: 1.35em;
-			&.beta {
-				font-size: 1em;
-			}
+		}
+		.beta p {
+			font-size: 1em;
 		}
 		.grid_full {
 			width: 133%;
@@ -1216,9 +1218,9 @@ ul.about-comm{
 		max-width: 66%;
 		p, li {
 			font-size: 1.55em;
-			&.beta {
-				font-size: 1.35em;
-			}
+		}
+		.beta p {
+			font-size: 1.35em;
 		}
 		h1 {
 			font-size: 4.5em;

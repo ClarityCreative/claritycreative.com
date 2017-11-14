@@ -864,7 +864,9 @@ ul.about-comm li {
   .project-banner h1 {
     font-size: 2.25em;
     letter-spacing: -2px;
-    margin-bottom: 0; }
+    line-height: 1.2em;
+    margin-bottom: 0;
+    padding-bottom: .25em; }
   .project-banner h2 {
     font-size: 2.3em;
     font-weight: 400;
@@ -1051,8 +1053,8 @@ ul.about-comm li {
     font-size: 3.75em; }
   .project-info p, .project-info li {
     font-size: 1.35em; }
-    .project-info p.beta, .project-info li.beta {
-      font-size: 1em; }
+  .project-info .beta p {
+    font-size: 1em; }
   .project-info .grid_full {
     width: 133%; } }
 
@@ -1061,8 +1063,8 @@ ul.about-comm li {
     max-width: 66%; }
     .project-info p, .project-info li {
       font-size: 1.55em; }
-      .project-info p.beta, .project-info li.beta {
-        font-size: 1.35em; }
+    .project-info .beta p {
+      font-size: 1.35em; }
     .project-info h1 {
       font-size: 4.5em; }
     .project-info .grid_full {
