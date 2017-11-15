@@ -1,8 +1,8 @@
 {% extends "_layout" %}
 {% set image  = clarityMatters.heroImage.first() %}
-{% set imgOne = clarityIn3dFirst.workImage.first() %}
-{% set imgTwo = clarityIn3dSecond.workImage.first() %}
-{% set imgThree = clarityIn3dThird.workImage.first() %}
+{% set imgOne = clarityIn3dFirst.videoImage.first() %}
+{% set imgTwo = clarityIn3dSecond.videoImage.first() %}
+{% set imgThree = clarityIn3dThird.videoImage.first() %}
 
 {% set teamers = craft.entries.section('team').ids() %}
 {% set teamCount = teamers|length %}
