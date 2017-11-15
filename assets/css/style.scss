@@ -1822,8 +1822,8 @@ article {
 
 
 /* quick version of main-nav you are here indicators */
-body.work .main-nav .video-item,
-	body.about .main-nav .live-item,
+body.video .main-nav .video-item,
+	body.live .main-nav .live-item,
 	body.about .main-nav .about-item,
 	body.ideas .main-nav .ideas-item,
 	body.ideas .main-nav .ideas-item,
@@ -1986,6 +1986,7 @@ ul.social {
 }
 
 .video-holder {
+	clear: both;
 	position: relative;
 	padding-top: 100%*(9/16);
 	figcaption {
@@ -2018,6 +2019,9 @@ body.work .single-work-banner .hero .btn {
 @media (min-width:400px){
 	body.work .single-work-banner{
 		max-height:230px;
+	}
+	.video-holder figcaption {
+		padding-top: 5.5em;
 	}
 }
 @media (min-width:500px){
