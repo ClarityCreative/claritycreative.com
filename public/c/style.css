@@ -1079,7 +1079,7 @@ ul.about-comm li {
 .meta-list {
   font-size: 0.925em;
   padding-top: 0.75em;
-  text-transform: uppercase;
+  text-transform: capitalize;
   word-spacing: 1px; }
   .meta-list a {
     color: #FFF; }
