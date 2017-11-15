@@ -684,7 +684,8 @@ ul.about-comm li {
     margin-bottom: 0; }
   .recent h5 {
     margin-bottom: 0;
-    color: #7D7D78; }
+    color: #7D7D78;
+    text-transform: uppercase; }
 
 @media screen and (min-width: 720px) {
   .recent .work {
