@@ -81,7 +81,8 @@
 										{{ block.caption }}
 									</figcaption>
 								</figure>
-					    {% endif %}			    
+					    {% endif %}		
+					    	    
 					    {% if block.type == "video" %}
 						<div class="video-holder">
 						<figure>
@@ -95,12 +96,14 @@
 					{% endfor %}				
 					{% set pressItems = entry.liveDescription.type('press') %}
 					{% if pressItems %}
+					<div class="project-info grid_full">
 						<h5>Press</h5>
 						<ul>
 							{% for item in pressItems %}
 								<li><a href="{{ item.webAddress }}">{{ item.displayText }}</a></li>
 							{% endfor %}
 						</ul>
+					</div>
 				    {% endif %}
 
 				{% endif %}
@@ -117,6 +120,17 @@
 			</ul>
 			{% endif %}
 		</div>
+		
+		{% if cookie %}
+		<div class="sidebar grid_3 project-info">
+			<h5>More Projects Like This:</h5>
+			<ul class="meta-list">
+				{% for category in entry.category %}
+				<li><a href="/video?cat={{category.slug}}">{{category.title}}</a></li>
+				{% endfor %}
+			</ul>
+		</div>
+		{% endif %}
 	</div>
 </section>
 
