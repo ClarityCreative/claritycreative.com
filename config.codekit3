@@ -24978,6 +24978,12 @@
 		"oAP": "\/craft\/storage\/runtime\/compiled_templates\/65\/651ccfeaac5b3685eb3cfbbb51f429ba0be8e78dadfb9bda6638dea5f5824990.php",
 		"oF": 0
 		},
+	"\/craft\/storage\/runtime\/compiled_templates\/65\/65f1b8cba8a231361dd7d50bd652790db85ca126fda29cd4693314a00528cd4f.php": {
+		"ft": 8192,
+		"oA": 2,
+		"oAP": "\/craft\/storage\/runtime\/compiled_templates\/65\/65f1b8cba8a231361dd7d50bd652790db85ca126fda29cd4693314a00528cd4f.php",
+		"oF": 0
+		},
 	"\/craft\/storage\/runtime\/compiled_templates\/67\/67e80c1d57073e6caae4ec63c6f4538a519de82b3485e2ccd1e9bdd355167383.php": {
 		"ft": 8192,
 		"oA": 2,
@@ -25334,7 +25340,7 @@
 		},
 	"\/craft\/storage\/runtime\/temp\/assets5a0b1f9c33d0d8.23475144.png": {
 		"ft": 32768,
-		"iS": 1395522,
+		"iS": 1206021,
 		"oA": 0,
 		"oAP": "\/craft\/storage\/runtime\/temp\/assets5a0b1f9c33d0d8.23475144.png",
 		"oF": 0,
@@ -25426,10 +25432,10 @@
 		"oAP": "\/craft\/templates\/index.twig",
 		"oF": 0
 		},
-	"\/craft\/templates\/live\/_entry.html": {
+	"\/craft\/templates\/live\/_entry.twig": {
 		"ft": 8192,
 		"oA": 1,
-		"oAP": "\/craft\/templates\/live\/_entry.html",
+		"oAP": "\/craft\/templates\/live\/_entry.twig",
 		"oF": 0
 		},
 	"\/craft\/templates\/live\/index.html": {

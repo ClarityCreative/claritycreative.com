@@ -69,7 +69,7 @@
 								{% else %}
 								<figure class="cf grid_full">							
 							{% endif %}
-									<img src="http://via.placeholder.com/420x280" alt="" />
+									<img src="{{ block.image.first().url }}" alt="{{block.image.first().title}}" />
 									<figcaption>
 										{{ block.caption }}
 									</figcaption>
