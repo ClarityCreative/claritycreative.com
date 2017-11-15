@@ -57,13 +57,11 @@
 
 				{% if entry.liveDescription %}
 					<h5>Description</h5>
-					{% for block in entry.liveDescription.type('text, image') %}
+					{% for block in entry.liveDescription if block.type == 'image' or block.type == 'text'  %}
 					    {% if block.type == "text" %}
 					        <span class="beta">{{ block.text }}</span>
-					    {% endif %}
-
-					    {% if block.type == "image" %}
-						{% set image = entry.liveDescription.block('image') %}
+					    {% elseif block.type == "image" %}
+							{% set image = entry.liveDescription.block('image') %}
 						    {% if block.imagePosition == 'right' %}
 								<figure class="content_pad_left grid_flow_opposite offset-img">
 								{% elseif block.imagePosition == 'left' %}
@@ -76,23 +74,19 @@
 										{{ block.caption }}
 									</figcaption>
 								</figure>
-
-					    {% endif %}	
-					    			    
+					    {% endif %}			    
 					{% endfor %}				
-
-					{% if entry.liveDescription.type('press') %}
-			        <h5>Press</h5>
-					<ul>
-						{% set entries = entry.liveDescription.type('press') %}
-					{% for entry in entries %}
-						<li><a href="{{ entry.webAddress }}">{{ entry.displayText }}</a></li>
-					{% endfor %}
-					</ul>
+					{% set pressItems = entry.liveDescription.type('press') %}
+					{% if pressItems %}
+						<h5>Press</h5>
+						<ul>
+							{% for item in pressItems %}
+								<li><a href="{{ item.webAddress }}">{{ item.displayText }}</a></li>
+							{% endfor %}
+						</ul>
 				    {% endif %}
 
 				{% endif %}
-				
 				
 			</div>
 		</div>
