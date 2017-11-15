@@ -5,11 +5,10 @@
 
 {% set tag = craft.request.getParam('tag') %}
 {% set cat = craft.request.getParam('cat') %}
-{% set category = craft.categories.group('categories').title(cat).first() %}
+{% set category = craft.categories.group('categories').slug(cat).first() %}
 
 
 {% block content %}
-
 <section class="banner_sizing">
 	<div class="container cf">
 		<div class="grid_full">
@@ -28,15 +27,20 @@
 
 {% if not cookie %}
 		{% for entry in craft.entries.section('live').private('not 1').liveSuperHero('1').limit(1) %}
-		<section class="project-banner project-banner-featured banner_sizing img_overlay" style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.live) }}{% endif %});">
-			<div class="container cf">
-				<div class="grid_full">
-					<h1>Featured Project</h1>
-					<h2><a href="{{entry.url}}">{{entry.title}}</a></h2>
-					<a href="{{entry.url}}" class="btn">View Project</a>
+			{% if entry.videoImage %}
+				{% set imageUrl = entry.videoImage.first().url %}
+			{% else %}
+				{% set imageUrl = craft.setcookie.vimPic(entry.live) %}
+			{% endif %}
+			<section class="project-banner project-banner-featured banner_sizing img_overlay" style="background-image: url({{imageUrl}});">
+				<div class="container cf">
+					<div class="grid_full">
+						<h1>Featured Project</h1>
+						<h2><a href="{{entry.url}}">{{entry.title}}</a></h2>
+						<a href="{{entry.url}}" class="btn">View Project</a>
+					</div>
 				</div>
-			</div>
-		</section>
+			</section>
 		{% endfor %}
 {% endif %}
 <section>
@@ -59,7 +63,7 @@
 										{{ category.title }}
 									{% endif %}
 								{% endfor %}
-							﻿{% else %}
+							{% else %}
 								All Projects
 							{% endif %}
 					<ul class="selectable">
@@ -91,7 +95,6 @@
 	<div class="container">
 		<div class="work cf">
 			{% if not cookie %}
-				{% cache %}
 					<ul class="info-blocks">
 						{% for entry in craft.entries.section('live').private('not 1').liveFeatured('1').order('title') %}
 						<li class="grid_4">
@@ -106,41 +109,48 @@
 						</li>
 						{% endfor %}
 					</ul>
-				{% endcache %}
 			{% else %}
-				{% cache %}
 				{% if not cat %}
-				<ul class="info-blocks">
-					{% for entry in craft.entries.section('live').order('title')  %}
-					<li class="grid_4">
-						<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
-							<a href="{{ entry.url }}">
-							</a>
-							<div>
-								<h5>{{ entry.title }}</h5>
-								<p>{{entry.shortDescription}}</p>
-							</div>
-						</div>
-					</li>
-					{% endfor %}
-				</ul>
+					<ul class="info-blocks">
+						{% for entry in craft.entries.section('live').order('title')  %}
+							{% if entry.videoImage %}
+								{% set imageUrl = entry.videoImage.first().url %}
+							{% else %}
+								{% set imageUrl = craft.setcookie.vimPic(entry.video) %}
+							{% endif %}
+							<li class="grid_4">
+								<div style="background-image: url({{imageUrl}});">
+									<a href="{{ entry.url }}">
+									</a>
+									<div>
+										<h5>{{ entry.title }}</h5>
+										<p>{{entry.shortDescription}}</p>
+									</div>
+								</div>
+							</li>
+						{% endfor %}
+					</ul>
 				{% else %}
-				<ul class="info-blocks">
-					{% for entry in craft.entries.section('live').relatedTo(category) %}
-					<li class="grid_4">
-						<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
-							<a href="{{ entry.url }}">
-							</a>
-							<div>
-								<h5>{{ entry.title }}</h5>
-								<p>{{entry.shortDescription}}</p>
-							</div>
-						</div>
-					</li>
-					{% endfor %}
-				</ul>
+					<ul class="info-blocks">
+						{% for entry in craft.entries.section('live').relatedTo(category).order('title') %}
+							{% if entry.videoImage %}
+								{% set imageUrl = entry.videoImage.first().url %}
+							{% else %}
+								{% set imageUrl = craft.setcookie.vimPic(entry.video) %}
+							{% endif %}
+							<li class="grid_4">
+								<div style="background-image: url({{imageUrl}});">
+									<a href="{{ entry.url }}">
+									</a>
+									<div>
+										<h5>{{ entry.title }}</h5>
+										<p>{{entry.shortDescription}}</p>
+									</div>
+								</div>
+							</li>
+						{% endfor %}
+					</ul>
 				{% endif %}
-				{% endcache %}
 			{% endif %}
 		</div>
 	</div>
@@ -163,7 +173,7 @@
 	$('#cat').on('change', function(){
 		var val = $(this).val();
 		if(val == 'all'){
-			location.href = "/video/#cat";
+			location.href = "/live/#cat";
 		}else{
 			location.href = "?cat=" + val +"#cat";
 		}
