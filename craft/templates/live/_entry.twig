@@ -114,9 +114,9 @@
 			{% if entry.tags %}
 			<h5>Services Provided</h5>
 			<ul class="meta-list">
-			{% for tag in entry.tags %}
-				<li>{{tag.name}}</a></li>
-			{% endfor %}
+				{% for tag in entry.tags %}
+					<li>{{tag.title}}</a></li>
+				{% endfor %}
 			</ul>
 			{% endif %}
 		</div>
