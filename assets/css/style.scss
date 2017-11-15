@@ -80,6 +80,7 @@ h5 {
 	font-weight: 700;
 	margin-bottom: 0.25em;
 	text-rendering: optimizeLegibility;
+	text-transform: uppercase;
 }
 
 p {
@@ -1245,17 +1246,8 @@ ul.about-comm{
 .meta-list {
 	font-size: 0.925em;
 	padding-top: 0.75em;
-	text-transform: uppercase;
+	text-transform: capitalize;
 	word-spacing: 1px;
-	li {
-		display: inline-block;
-		&:after {
-			content: ',';
-		}
-	}
-	li:last-child:after {
-		content: '';
-	}
 	a {
 		color: $white;
 		&:hover {

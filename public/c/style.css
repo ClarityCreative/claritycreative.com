@@ -110,7 +110,8 @@ h5 {
   color: rgba(255, 255, 255, 0.5);
   font-weight: 700;
   margin-bottom: 0.25em;
-  text-rendering: optimizeLegibility; }
+  text-rendering: optimizeLegibility;
+  text-transform: uppercase; }
 
 p {
   margin-bottom: 1em; }
@@ -1081,14 +1082,8 @@ ul.about-comm li {
 .meta-list {
   font-size: 0.925em;
   padding-top: 0.75em;
-  text-transform: uppercase;
+  text-transform: capitalize;
   word-spacing: 1px; }
-  .meta-list li {
-    display: inline-block; }
-    .meta-list li:after {
-      content: ','; }
-  .meta-list li:last-child:after {
-    content: ''; }
   .meta-list a {
     color: #FFF; }
     .meta-list a:hover {

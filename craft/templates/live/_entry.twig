@@ -1,5 +1,12 @@
 {% extends "_layout" %}
 
+{% set entryIds = craft.entries.section('video').ids() %}
+{% set categories = craft.categories.relatedTo({ sourceElement: entryIds }).groupId(1).find() %}
+
+{% set tag = craft.request.getParam('tag') %}
+{% set cat = craft.request.getParam('cat') %}
+{% set category = craft.categories.group('categories').title(cat).first() %}
+
 
 {% block content %}
 
@@ -93,7 +100,7 @@
 		<div class="sidebar grid_3 project-info">
 			{% if entry.tags %}
 			<h5>Services Provided</h5>
-			<ul class="services">
+			<ul class="meta-list">
 			{% for tag in entry.tags %}
 				<li>{{tag.name}}</a></li>
 			{% endfor %}
@@ -102,6 +109,67 @@
 		</div>
 	</div>
 </section>
+
+<section class="recent">
+	<div class="container">
+		<div class="work cf">
+			<span class="grid_full"><h5>Similar Projects</h5></span>
+			{% if not cookie %}
+				{% cache %}
+					<ul class="info-blocks">
+						{% for entry in craft.entries.section('video').private('not 1').videoFeatured('1').order('title').limit(3) %}
+						<li class="grid_4">
+							<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+								<a href="{{ entry.url }}">
+								</a>
+								<div>
+									<h5>{{ entry.title }}</h5>
+									<p>{{entry.shortDescription}}</p>
+								</div>
+							</div>
+						</li>
+						{% endfor %}
+					</ul>
+				{% endcache %}
+			{% else %}
+				{% cache %}
+				{% if not cat %}
+				<ul class="info-blocks">
+					{% for entry in craft.entries.section('video').order('title').limit(3)  %}
+					<li class="grid_4">
+						<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+							<a href="{{ entry.url }}">
+							</a>
+							<div>
+								<h5>{{ entry.title }}</h5>
+								<p>{{entry.shortDescription}}</p>
+							</div>
+						</div>
+					</li>
+					{% endfor %}
+				</ul>
+				{% else %}
+				<ul class="info-blocks">
+					{% for entry in craft.entries.section('video').relatedTo(category).limit(3) %}
+					<li class="grid_4">
+						<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+							<a href="{{ entry.url }}">
+							</a>
+							<div>
+								<h5>{{ entry.title }}</h5>
+								<p>{{entry.shortDescription}}</p>
+							</div>
+						</div>
+					</li>
+					{% endfor %}
+				</ul>
+				{% endif %}
+				{% endcache %}
+			{% endif %}
+		</div>
+	</div>
+</section>
+
 
 {% if not play %}
 <script charset="utf-8">
