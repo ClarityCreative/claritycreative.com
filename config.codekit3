@@ -24625,6 +24625,12 @@
 		"oAP": "\/craft\/storage\/backups\/clarity-creative_171114_223241_2hmzejfnmh_v2.6.2989.sql",
 		"oF": 0
 		},
+	"\/craft\/storage\/backups\/clarity-creative_171115_180913_fhvi8cd1a1_v2.6.2989.sql": {
+		"ft": 8192,
+		"oA": 2,
+		"oAP": "\/craft\/storage\/backups\/clarity-creative_171115_180913_fhvi8cd1a1_v2.6.2989.sql",
+		"oF": 0
+		},
 	"\/craft\/storage\/rebrand\/logo\/logo.png": {
 		"ft": 32768,
 		"iS": 3455,
@@ -25382,6 +25388,12 @@
 		"ft": 8192,
 		"oA": 2,
 		"oAP": "\/craft\/storage\/runtime\/temp\/clarity-creative_171114_223241_2hmzejfnmh_v2.6.2989.zip",
+		"oF": 0
+		},
+	"\/craft\/storage\/runtime\/temp\/clarity-creative_171115_180913_fhvi8cd1a1_v2.6.2989.zip": {
+		"ft": 8192,
+		"oA": 2,
+		"oAP": "\/craft\/storage\/runtime\/temp\/clarity-creative_171115_180913_fhvi8cd1a1_v2.6.2989.zip",
 		"oF": 0
 		},
 	"\/craft\/templates\/404.html": {

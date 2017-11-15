@@ -64,7 +64,7 @@
 
 				{% if entry.liveDescription %}
 					<h5>Description</h5>
-					{% for block in entry.liveDescription if block.type == 'image' or block.type == 'text'  %}
+					{% for block in entry.liveDescription if block.type == 'image' or block.type == 'text' or block.type == 'video'  %}
 					    {% if block.type == "text" %}
 					        <span class="beta">{{ block.text }}</span>
 					    {% elseif block.type == "image" %}
@@ -82,6 +82,16 @@
 									</figcaption>
 								</figure>
 					    {% endif %}			    
+					    {% if block.type == "video" %}
+						<div class="video-holder">
+						<figure>
+							<iframe src="//player.vimeo.com/video/{{block.video}}{{autoplay}}" frameborder="0" height="100%" webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen=""></iframe>
+						<figcaption>
+							{{ block.caption }}
+						</figcaption>
+					</figure>
+				</div>					   
+					    {% endif %}
 					{% endfor %}				
 					{% set pressItems = entry.liveDescription.type('press') %}
 					{% if pressItems %}
