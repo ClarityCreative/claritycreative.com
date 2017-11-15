@@ -1617,7 +1617,8 @@ body {
     font-size: 100%; } }
 
 /* quick version of main-nav you are here indicators */
-body.work .main-nav .work-item,
+body.work .main-nav .video-item,
+body.about .main-nav .live-item,
 body.about .main-nav .about-item,
 body.ideas .main-nav .ideas-item,
 body.ideas .main-nav .ideas-item,
