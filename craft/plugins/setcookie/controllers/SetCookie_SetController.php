@@ -17,9 +17,9 @@ class Setcookie_SetController extends BaseController
       }
 
       if(isset($work)){
-        header( 'Location: /work/'. $work );
+        header( 'Location: /video/'. $work );
       }else{
-        header( 'Location: /work' );
+        header( 'Location: /video' );
       }
     }else{
       header( 'Location: /client-access?q=invalid' );
