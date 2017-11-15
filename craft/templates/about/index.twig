@@ -1,8 +1,8 @@
 {% extends "_layout" %}
 {% set image  = clarityMatters.heroImage.first() %}
-{% set imgOne = clarityIn3dFirst.workImage.first() %}
-{% set imgTwo = clarityIn3dSecond.workImage.first() %}
-{% set imgThree = clarityIn3dThird.workImage.first() %}
+{% set imgOne = clarityIn3dFirst.videoImage.first() %}
+{% set imgTwo = clarityIn3dSecond.videoImage.first() %}
+{% set imgThree = clarityIn3dThird.videoImage.first() %}
 
 {% set teamers = craft.entries.section('team').ids() %}
 {% set teamCount = teamers|length %}
@@ -38,25 +38,25 @@
 			</div>
 			<ul class="approach-items">
 	<li class="cf">
-	<span class="icon left"><img src="{{imgOne.url}}" alt=""></span>
-	<p class="copy">
-	</p>
-	<h2>{{clarityIn3dFirst.heading}}</h2>
+		<span class="icon left"><img src="{{imgOne.url}}" alt=""></span>
+		<span class="grid_6">
+			<h2>{{clarityIn3dFirst.heading}}</h2>
 			{{clarityIn3dFirst.body}}
+		</span>
 	</li>
 	<li class="cf">
-	<span class="icon right"><img src="{{imgTwo.url}}" alt=""></span>
-	<p class="copy">
-	</p>
-	<h2>{{clarityIn3dSecond.heading}}</h2>
+		<span class="icon right"><img src="{{imgTwo.url}}" alt=""></span>
+		<span class="grid_6">
+			<h2>{{clarityIn3dSecond.heading}}</h2>
 			{{clarityIn3dSecond.body}}
+		</span>
 	</li>
 	<li class="cf">
-	<span class="icon left third"><img src="{{imgThree.url}}" alt=""></span>
-	<p class="copy">
-	</p>
-	<h2>{{clarityIn3dThird.heading}}</h2>
+		<span class="icon left third"><img src="{{imgThree.url}}" alt=""></span>
+		<span class="grid_6">
+			<h2>{{clarityIn3dThird.heading}}</h2>
 			{{clarityIn3dThird.body}}
+		</span>
 	</li>
 </ul>
 		</div>
