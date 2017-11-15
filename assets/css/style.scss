@@ -1245,15 +1245,6 @@ ul.about-comm{
 	padding-top: 0.75em;
 	text-transform: uppercase;
 	word-spacing: 1px;
-	li {
-		display: inline-block;
-		&:after {
-			content: ',';
-		}
-	}
-	li:last-child:after {
-		content: '';
-	}
 	a {
 		color: $white;
 		&:hover {
