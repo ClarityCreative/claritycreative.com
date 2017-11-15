@@ -72,7 +72,7 @@
 		},
 	"\/craft\/app\/assetsourcetypes\/GoogleCloudAssetSourceType.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/assetsourcetypes\/GoogleCloudAssetSourceType.php",
 		"oF": 0
 		},
@@ -84,13 +84,13 @@
 		},
 	"\/craft\/app\/assetsourcetypes\/RackspaceAssetSourceType.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/assetsourcetypes\/RackspaceAssetSourceType.php",
 		"oF": 0
 		},
 	"\/craft\/app\/assetsourcetypes\/S3AssetSourceType.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/assetsourcetypes\/S3AssetSourceType.php",
 		"oF": 0
 		},
@@ -252,7 +252,7 @@
 		},
 	"\/craft\/app\/controllers\/RebrandController.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/controllers\/RebrandController.php",
 		"oF": 0
 		},
@@ -282,7 +282,7 @@
 		},
 	"\/craft\/app\/controllers\/TagsController.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/controllers\/TagsController.php",
 		"oF": 0
 		},
@@ -294,7 +294,7 @@
 		},
 	"\/craft\/app\/controllers\/TemplatesController.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/controllers\/TemplatesController.php",
 		"oF": 0
 		},
@@ -312,7 +312,7 @@
 		},
 	"\/craft\/app\/controllers\/UsersController.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/controllers\/UsersController.php",
 		"oF": 0
 		},
@@ -618,7 +618,7 @@
 		},
 	"\/craft\/app\/etc\/behaviors\/AppBehavior.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/etc\/behaviors\/AppBehavior.php",
 		"oF": 0
 		},
@@ -714,7 +714,7 @@
 		},
 	"\/craft\/app\/etc\/config\/defaults\/general.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/etc\/config\/defaults\/general.php",
 		"oF": 0
 		},
@@ -822,7 +822,7 @@
 		},
 	"\/craft\/app\/etc\/elements\/ElementRelationParamParser.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/etc\/elements\/ElementRelationParamParser.php",
 		"oF": 0
 		},
@@ -936,7 +936,7 @@
 		},
 	"\/craft\/app\/etc\/image\/Image.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/etc\/image\/Image.php",
 		"oF": 0
 		},
@@ -1104,7 +1104,7 @@
 		},
 	"\/craft\/app\/etc\/templating\/twigextensions\/CraftTwigExtension.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/etc\/templating\/twigextensions\/CraftTwigExtension.php",
 		"oF": 0
 		},
@@ -1332,7 +1332,7 @@
 		},
 	"\/craft\/app\/etc\/web\/UploadedFile.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/etc\/web\/UploadedFile.php",
 		"oF": 0
 		},
@@ -1344,7 +1344,7 @@
 		},
 	"\/craft\/app\/etc\/web\/WebApp.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/etc\/web\/WebApp.php",
 		"oF": 0
 		},
@@ -1458,7 +1458,7 @@
 		},
 	"\/craft\/app\/fieldtypes\/NumberFieldType.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/fieldtypes\/NumberFieldType.php",
 		"oF": 0
 		},
@@ -3246,7 +3246,7 @@
 		},
 	"\/craft\/app\/framework\/utils\/mimeTypes.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/framework\/utils\/mimeTypes.php",
 		"oF": 0
 		},
@@ -7543,7 +7543,7 @@
 		},
 	"\/craft\/app\/helpers\/DateTimeHelper.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/helpers\/DateTimeHelper.php",
 		"oF": 0
 		},
@@ -7651,7 +7651,7 @@
 		},
 	"\/craft\/app\/helpers\/UrlHelper.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/helpers\/UrlHelper.php",
 		"oF": 0
 		},
@@ -7669,7 +7669,7 @@
 		},
 	"\/craft\/app\/Info.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/Info.php",
 		"oF": 0
 		},
@@ -7917,6 +7917,12 @@
 		"ft": 8192,
 		"oA": 2,
 		"oAP": "\/craft\/app\/migrations\/m170612_000000_route_index_shuffle.php",
+		"oF": 0
+		},
+	"\/craft\/app\/migrations\/m171107_000000_assign_group_permissions.php": {
+		"ft": 8192,
+		"oA": 2,
+		"oAP": "\/craft\/app\/migrations\/m171107_000000_assign_group_permissions.php",
 		"oF": 0
 		},
 	"\/craft\/app\/models\/AccountSettingsModel.php": {
@@ -12827,12 +12833,6 @@
 		"sC": 1,
 		"tS": 0
 		},
-	"\/craft\/app\/resources\/lib\/redactor\/redactor.min.js.map": {
-		"ft": 8192,
-		"oA": 2,
-		"oAP": "\/craft\/app\/resources\/lib\/redactor\/redactor.min.js.map",
-		"oF": 0
-		},
 	"\/craft\/app\/resources\/lib\/selectize\/selectize.css": {
 		"aP": 1,
 		"bl": 0,
@@ -13250,7 +13250,7 @@
 		},
 	"\/craft\/app\/services\/CategoriesService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/CategoriesService.php",
 		"oF": 0
 		},
@@ -13280,7 +13280,7 @@
 		},
 	"\/craft\/app\/services\/DeprecatorService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/DeprecatorService.php",
 		"oF": 0
 		},
@@ -13292,7 +13292,7 @@
 		},
 	"\/craft\/app\/services\/ElementsService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/ElementsService.php",
 		"oF": 0
 		},
@@ -13346,7 +13346,7 @@
 		},
 	"\/craft\/app\/services\/HttpRequestService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/HttpRequestService.php",
 		"oF": 0
 		},
@@ -13454,7 +13454,7 @@
 		},
 	"\/craft\/app\/services\/TasksService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/TasksService.php",
 		"oF": 0
 		},
@@ -13466,7 +13466,7 @@
 		},
 	"\/craft\/app\/services\/TemplatesService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/TemplatesService.php",
 		"oF": 0
 		},
@@ -13484,19 +13484,19 @@
 		},
 	"\/craft\/app\/services\/UserGroupsService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/UserGroupsService.php",
 		"oF": 0
 		},
 	"\/craft\/app\/services\/UserPermissionsService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/UserPermissionsService.php",
 		"oF": 0
 		},
 	"\/craft\/app\/services\/UserSessionService.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/services\/UserSessionService.php",
 		"oF": 0
 		},
@@ -13652,7 +13652,7 @@
 		},
 	"\/craft\/app\/templates\/_components\/fieldtypes\/Matrix\/input.html": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/templates\/_components\/fieldtypes\/Matrix\/input.html",
 		"oF": 0
 		},
@@ -13998,7 +13998,7 @@
 		},
 	"\/craft\/app\/templates\/_includes\/permissions.html": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/templates\/_includes\/permissions.html",
 		"oF": 0
 		},
@@ -14070,7 +14070,7 @@
 		},
 	"\/craft\/app\/templates\/_special\/install\/account.html": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/templates\/_special\/install\/account.html",
 		"oF": 0
 		},
@@ -14094,7 +14094,7 @@
 		},
 	"\/craft\/app\/templates\/_special\/install\/site.html": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/templates\/_special\/install\/site.html",
 		"oF": 0
 		},
@@ -14508,7 +14508,7 @@
 		},
 	"\/craft\/app\/templates\/users\/_edit.html": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 1,
 		"oAP": "\/craft\/app\/templates\/users\/_edit.html",
 		"oF": 0
 		},
@@ -15006,13 +15006,13 @@
 		},
 	"\/craft\/app\/variables\/UserGroupsVariable.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/variables\/UserGroupsVariable.php",
 		"oF": 0
 		},
 	"\/craft\/app\/variables\/UserPermissionsVariable.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/variables\/UserPermissionsVariable.php",
 		"oF": 0
 		},
@@ -15024,7 +15024,7 @@
 		},
 	"\/craft\/app\/vendor\/autoload.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/autoload.php",
 		"oF": 0
 		},
@@ -15048,13 +15048,13 @@
 		},
 	"\/craft\/app\/vendor\/composer\/autoload_real.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/composer\/autoload_real.php",
 		"oF": 0
 		},
 	"\/craft\/app\/vendor\/composer\/autoload_static.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/composer\/autoload_static.php",
 		"oF": 0
 		},
@@ -17592,7 +17592,7 @@
 		},
 	"\/craft\/app\/vendor\/lsolesen\/pel\/src\/PelIfd.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/lsolesen\/pel\/src\/PelIfd.php",
 		"oF": 0
 		},
@@ -17690,7 +17690,7 @@
 		},
 	"\/craft\/app\/vendor\/pclzip\/pclzip\/pclzip.lib.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/pclzip\/pclzip\/pclzip.lib.php",
 		"oF": 0
 		},
@@ -19495,13 +19495,13 @@
 		},
 	"\/craft\/app\/vendor\/symfony\/event-dispatcher\/ContainerAwareEventDispatcher.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/symfony\/event-dispatcher\/ContainerAwareEventDispatcher.php",
 		"oF": 0
 		},
 	"\/craft\/app\/vendor\/symfony\/event-dispatcher\/Debug\/TraceableEventDispatcher.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/symfony\/event-dispatcher\/Debug\/TraceableEventDispatcher.php",
 		"oF": 0
 		},
@@ -19519,7 +19519,7 @@
 		},
 	"\/craft\/app\/vendor\/symfony\/event-dispatcher\/DependencyInjection\/RegisterListenersPass.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/symfony\/event-dispatcher\/DependencyInjection\/RegisterListenersPass.php",
 		"oF": 0
 		},
@@ -19537,7 +19537,7 @@
 		},
 	"\/craft\/app\/vendor\/symfony\/event-dispatcher\/EventDispatcherInterface.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/symfony\/event-dispatcher\/EventDispatcherInterface.php",
 		"oF": 0
 		},
@@ -19549,7 +19549,7 @@
 		},
 	"\/craft\/app\/vendor\/symfony\/event-dispatcher\/GenericEvent.php": {
 		"ft": 8192,
-		"oA": 0,
+		"oA": 2,
 		"oAP": "\/craft\/app\/vendor\/symfony\/event-dispatcher\/GenericEvent.php",
 		"oF": 0
 		},
