@@ -61,6 +61,10 @@ function updateVideoInfo(text) {
             $('#{{id}}-field .videoInfo').show();
             $.get(`https://vimeo.com/api/oembed.json?url=https%3A//vimeo.com/${text}`,
             function(data) {
+                if(data.thumbnail_url) {
+                    $('#fields-videoThumbnailUrl').val(data.thumbnail_url);
+                    $('#fields-videoThumbnailUrl').attr('disabled', true);
+                }
                 $('#{{id}}-field .videoWrapper').show();
                 $('#{{id}}-field .videoInfo').empty();
                 $('#{{id}}-field .videoWrapper').empty();
@@ -75,6 +79,7 @@ function updateVideoInfo(text) {
                 $('#{{id}}-field .videoWrapper').empty();
                 $('#{{id}}-field .videoInfo').empty();
                 $('#{{id}}-field .videoInfo').append('<h2 class="alert">No Video Found!</h2>');
+                $('#fields-videoThumbnailUrl').val('');
                 isInputValid = false
             })
         } else {
@@ -82,6 +87,7 @@ function updateVideoInfo(text) {
             $('#{{id}}-field .videoInfo').hide();
             $('#{{id}}-field .videoWrapper').empty();
             $('#{{id}}-field .videoInfo').empty();
+            $('#fields-videoThumbnailUrl').val('');
             isInputValid = true;
         }
 }
