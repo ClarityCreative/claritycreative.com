@@ -27,7 +27,7 @@
 
 {% if not cookie %}
 		{% for entry in craft.entries.section('live').private('not 1').liveSuperHero('1').limit(1) %}
-			{% if entry.videoImage %}
+			{% if entry.videoImage and entry.videoImage | length > 0 %}
 				{% set imageUrl = entry.videoImage.first().url %}
 			{% else %}
 				{% set imageUrl = craft.setcookie.vimPic(entry.live) %}
@@ -113,7 +113,7 @@
 				{% if not cat %}
 					<ul class="info-blocks">
 						{% for entry in craft.entries.section('live').order('title')  %}
-							{% if entry.videoImage %}
+							{% if entry.videoImage and entry.videoImage | length > 0 %}
 								{% set imageUrl = entry.videoImage.first().url %}
 							{% else %}
 								{% set imageUrl = craft.setcookie.vimPic(entry.video) %}
@@ -133,7 +133,7 @@
 				{% else %}
 					<ul class="info-blocks">
 						{% for entry in craft.entries.section('live').relatedTo(category).order('title') %}
-							{% if entry.videoImage %}
+							{% if entry.videoImage and entry.videoImage | length > 0 %}
 								{% set imageUrl = entry.videoImage.first().url %}
 							{% else %}
 								{% set imageUrl = craft.setcookie.vimPic(entry.video) %}
