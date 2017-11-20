@@ -28,7 +28,13 @@
 
 
 <section class="project-banner single-work-banner banner_sizing img_overlay" >
-	<div class="container cf hero-bg" style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %}); background-repeat:no-repeat; background-size:cover; margin:0; width:100%" >
+	{% set imageUrl = "" %}
+	{% if entry.videoImage and entry.videoImage | length > 0 %}
+		{% set imageUrl = entry.videoImage.first().url %}
+	{% elseif entry.video %}
+		{% set imageUrl = craft.setcookie.vimPic(entry.video) %}
+	{% endif %}
+	<div class="container cf hero-bg" style="background-image: url({{imageUrl}}); background-repeat:no-repeat; background-size:cover; margin:0; width:100%" >
 		<div class="grid_full">
 			<div class="hero grid_9">
 				<div class="va_b over-message">
@@ -37,18 +43,22 @@
 						{% if entry.client %}
 						<h2>Client: {{entry.client}}</h2>
 						{% endif %}
-						<a href="#" id="play" class="btn">play &#9656;</a>				
+						{% if entry.video %}
+							<a href="#" id="play" class="btn">play &#9656;</a>
+						{% endif %}			
 					</div>
 				</div>
 				<div class="gradient"></div>
 			</div>
 		</div>
 	</div>
-	<div id="video">
-		<div class="video-holder">
-			<iframe src="//player.vimeo.com/video/{{entry.video}}{{autoplay}}" frameborder="0" height="100%" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+	{% if entry.video %}
+		<div id="video">
+			<div class="video-holder">
+				<iframe src="//player.vimeo.com/video/{{entry.video}}{{autoplay}}" frameborder="0" height="100%" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+			</div>
 		</div>
-	</div>
+	{% endif %}
 </section>
 
 
@@ -143,7 +153,12 @@
 					<ul class="info-blocks">
 						{% for entry in craft.entries.section('video').private('not 1').videoFeatured('1').order('title').limit(3) %}
 						<li class="grid_4">
-							<div style="background-image: url({%if entry.videoImage | length %}{% for asset in entry.videoImage %}{{ asset.url }}{% endfor %}{% else %}{{ craft.setcookie.vimPic(entry.video) }}{% endif %});">
+							{% if entry.videoImage and entry.videoImage | length > 0 %}
+								{% set imageUrl = entry.videoImage.first().url %}
+							{% else %}
+								{% set imageUrl = craft.setcookie.vimPic(entry.video) %}
+							{% endif %}
+							<div style="background-image: url({{imageUrl}});">
 								<a href="{{ entry.url }}">
 								</a>
 								<div>
