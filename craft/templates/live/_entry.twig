@@ -136,7 +136,7 @@
 			<h5>More Projects Like This:</h5>
 			<ul class="meta-list">
 				{% for category in entry.category %}
-				<li><a href="/video?cat={{category.slug}}">{{category.title}}</a></li>
+				<li><a href="/live?cat={{category.slug}}">{{category.title}}</a></li>
 				{% endfor %}
 			</ul>
 		</div>
@@ -151,7 +151,7 @@
 			{% if not cookie %}
 				{% cache %}
 					<ul class="info-blocks">
-						{% for entry in craft.entries.section('video').private('not 1').videoFeatured('1').order('title').limit(3) %}
+						{% for entry in craft.entries.section('live').private('not 1').videoFeatured('1').order('title').limit(3) %}
 						<li class="grid_4">
 							{% if entry.videoImage and entry.videoImage | length > 0 %}
 								{% set imageUrl = entry.videoImage.first().url %}
