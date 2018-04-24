@@ -1019,6 +1019,8 @@ ul.about-comm li {
     margin-bottom: 2.7em; }
   .project-info ul {
     list-style: disc; }
+  .project-info ul.meta-list {
+    list-style: none; }
   .project-info figure {
     margin: 0 0 1.55em; }
     .project-info figure img {
