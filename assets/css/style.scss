@@ -1148,11 +1148,11 @@ ul.about-comm{
 		line-height: 1.45;
 		word-spacing: 1px;
 	}
-	p{
+	p, ul {
 		margin-bottom: 2.7em;		
 	}
-	li {
-		font-style: italic;
+	ul {
+		list-style: disc;
 	}
 	figure {
 		margin: 0 0 1.55em;
@@ -1221,7 +1221,7 @@ ul.about-comm{
 		p, li {
 			font-size: 1.55em;
 		}
-		.beta p {
+		.beta p, .beta li {
 			font-size: 1.35em;
 		}
 		h1 {

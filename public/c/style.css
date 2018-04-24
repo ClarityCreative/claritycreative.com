@@ -1015,10 +1015,10 @@ ul.about-comm li {
     letter-spacing: -1px;
     line-height: 1.45;
     word-spacing: 1px; }
-  .project-info p {
+  .project-info p, .project-info ul {
     margin-bottom: 2.7em; }
-  .project-info li {
-    font-style: italic; }
+  .project-info ul {
+    list-style: disc; }
   .project-info figure {
     margin: 0 0 1.55em; }
     .project-info figure img {
@@ -1065,7 +1065,7 @@ ul.about-comm li {
     max-width: 66%; }
     .project-info p, .project-info li {
       font-size: 1.55em; }
-    .project-info .beta p {
+    .project-info .beta p, .project-info .beta li {
       font-size: 1.35em; }
     .project-info h1 {
       font-size: 4.5em; }
