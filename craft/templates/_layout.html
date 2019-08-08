@@ -17,6 +17,17 @@
 	<link rel="stylesheet" href="{{ craft.bust.er('/c/style.css') }}">
 	<link rel="stylesheet" type="text/css" href="//cloud.typography.com/6349312/767324/css/fonts.css" />
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+<!--
+	<style>
+		header { height: 9.4em; }
+
+		.banner p { text-align: center; background-color: #121313; margin-top: -.5em; padding: .75em; width: 100%;}
+		.banner p a { background-color: #FF8936; border-radius: 8px; color: #ffffff; font-size: 12px; margin-left: .5em; padding: .5em;  }
+
+		
+	</style>
+-->
 </head>
 
 {% if craft.request.getSegment(1) == "" %}
@@ -24,9 +35,12 @@
 {% else %}
 <body class="{{ craft.request.getSegment(1) }}">
 {% endif %}
-
-
 	<header>
+<!--
+	<div class="banner">
+		<p>Opus Bolsters Creative Capabilities with Acquisition of Clarity Creative <a href="#">LEARN MORE</a></p>
+	</div>
+-->
 		<div class="container cf padded">
 			<div class="grid_full">
 				<a href="/" class="logo" title="Logo"></a>
